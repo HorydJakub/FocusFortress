@@ -1,19 +1,17 @@
 package com.focusfortress.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
+@RequiredArgsConstructor
 @Service
 public class EmailService {
 
     private final JavaMailSender mailSender;
-
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
 
     public void sendVerificationEmail(String to, String token) {
         String link = "http://localhost:8080/api/auth/verify?token=" + token;

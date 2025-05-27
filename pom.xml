@@ -15,7 +15,8 @@
         <mysql.version>9.2.0</mysql.version>
         <jjwt.version>0.12.6</jjwt.version>
         <spring-security.version>6.4.3</spring-security.version>
-        <lombok.version>1.18.36</lombok.version>
+        <lombok.version>1.18.26</lombok.version>
+        <jackson.databind.version>2.19.0</jackson.databind.version>
     </properties>
 
     <dependencies>
@@ -62,6 +63,25 @@
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
             <version>${jjwt.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.databind.version}</version>
         </dependency>
 
         <!-- Spring Security Crypto  -->
