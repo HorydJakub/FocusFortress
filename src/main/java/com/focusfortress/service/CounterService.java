@@ -40,4 +40,32 @@ public class CounterService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         return counterRepository.findByUserId(user.getId());
     }
+
+    public void deleteCounter(Long counterId, String email) {
+        Counter counter = counterRepository.findById(counterId)
+                .orElseThrow(() -> new RuntimeException("Counter not found"));
+        if (!counter.getUser().getEmail().equals(email)) {
+            throw new RuntimeException("Access denied!");
+        }
+        counterRepository.delete(counter);
+    }
+
+    public void resetCounter(Long counterId, String email) {
+        Counter counter = counterRepository.findById(counterId)
+                .orElseThrow(() -> new RuntimeException("Counter not found"));
+        if (!counter.getUser().getEmail().equals(email)) {
+            throw new RuntimeException("Access denied");
+        }
+        counter.setStartDateTime(java.time.LocalDateTime.now());
+        counterRepository.save(counter);
+    }
+
+    public Counter getCounterById(Long counterId, String email) {
+        Counter counter = counterRepository.findById(counterId)
+                .orElseThrow(() -> new RuntimeException("Counter not found"));
+        if (!counter.getUser().getEmail().equals(email)) {
+            throw new RuntimeException("Access denied");
+        }
+        return counter;
+    }
 }
