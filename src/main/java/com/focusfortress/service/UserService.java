@@ -5,23 +5,19 @@ import com.focusfortress.model.Role;
 import com.focusfortress.model.User;
 import com.focusfortress.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+@RequiredArgsConstructor
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
-
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.emailService = emailService;
-    }
 
     @Transactional
     public User registerUser(UserRegistrationDTO userDTO) {
