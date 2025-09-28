@@ -3,10 +3,11 @@ package com.focusfortress.controller;
 import com.focusfortress.dto.CounterDTO;
 import com.focusfortress.model.Counter;
 import com.focusfortress.service.CounterService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.security.Principal;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,13 +16,17 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/counters")
 public class CounterController {
 
-    @Autowired
-    private CounterService counterService;
+    private final CounterService counterService;
+
+    public CounterController(CounterService counterService) {
+        this.counterService = counterService;
+    }
 
     @PostMapping
-    public ResponseEntity<CounterDTO> createCounter(@RequestBody CounterDTO counterDTO, Principal principal) {
-        Counter counter = counterService.createCounter(principal.getName(), counterDTO);
-        return ResponseEntity.ok(convertToDTO(counter));
+    public ResponseEntity<CounterDTO> createCounter(@Valid @RequestBody CounterDTO counterDTO, Principal principal) {
+        Counter saved = counterService.createCounter(principal.getName(), counterDTO);
+        URI location = URI.create("/api/counters/" + saved.getId());
+        return ResponseEntity.created(location).body(convertToDTO(saved));
     }
 
     @GetMapping
@@ -40,13 +45,11 @@ public class CounterController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{counterId}/reset")
+    @PatchMapping("/{counterId}/reset")
     public ResponseEntity<CounterDTO> resetCounter(@PathVariable("counterId") Long counterId, Principal principal) {
-        counterService.resetCounter(counterId, principal.getName());
-        Counter updatedCounter = counterService.getCounterById(counterId, principal.getName());
+        Counter updatedCounter = counterService.resetCounter(counterId, principal.getName());
         return ResponseEntity.ok(convertToDTO(updatedCounter));
     }
-
 
     private CounterDTO convertToDTO(Counter counter) {
         CounterDTO dto = new CounterDTO();

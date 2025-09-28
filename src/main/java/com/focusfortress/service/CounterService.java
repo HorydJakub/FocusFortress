@@ -1,20 +1,25 @@
 package com.focusfortress.service;
 
 import com.focusfortress.dto.CounterDTO;
+import com.focusfortress.exception.ForbiddenException;
+import com.focusfortress.exception.NotFoundException;
 import com.focusfortress.model.Counter;
 import com.focusfortress.model.User;
 import com.focusfortress.repository.CounterRepository;
 import com.focusfortress.repository.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@Transactional
 public class CounterService {
 
-    private CounterRepository counterRepository;
-    private UserRepository userRepository;
+    private final CounterRepository counterRepository;
+    private final UserRepository userRepository;
 
     public CounterService(CounterRepository counterRepository, UserRepository userRepository) {
         this.counterRepository = counterRepository;
@@ -25,16 +30,27 @@ public class CounterService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        Counter counter = new Counter();
-        counter.setName(counterDTO.getName());
-        counter.setDescription(counterDTO.getDescription());
-        counter.setStartDateTime(counterDTO.getStartDateTime());
-        counter.setIcon(counterDTO.getIcon());
-        counter.setUser(user);
+        if (counterRepository.existsByUserIdAndName(user.getId(), counterDTO.getName())) {
+            throw new IllegalArgumentException("Counter with this name already exists for the user");
+        }
 
-        return counterRepository.save(counter);
+        Counter counter = Counter.builder()
+                .name(counterDTO.getName())
+                .description(counterDTO.getDescription())
+                .icon(counterDTO.getIcon())
+                .user(user)
+                .startDateTime(counterDTO.getStartDateTime())
+                .build();
+
+        try {
+            return counterRepository.save(counter);
+        } catch (DataIntegrityViolationException ex) {
+            throw new IllegalArgumentException("Counter with this name already exists for the user");
+        }
+
     }
 
+    @Transactional(readOnly = true)
     public List<Counter> getUserCounters(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
@@ -43,28 +59,32 @@ public class CounterService {
 
     public void deleteCounter(Long counterId, String email) {
         Counter counter = counterRepository.findById(counterId)
-                .orElseThrow(() -> new RuntimeException("Counter not found"));
+                .orElseThrow(() -> new NotFoundException("Counter not found"));
+
         if (!counter.getUser().getEmail().equals(email)) {
-            throw new RuntimeException("Access denied!");
+            throw new ForbiddenException("Access denied");
         }
         counterRepository.delete(counter);
     }
 
-    public void resetCounter(Long counterId, String email) {
+    public Counter resetCounter(Long counterId, String email) {
         Counter counter = counterRepository.findById(counterId)
-                .orElseThrow(() -> new RuntimeException("Counter not found"));
+                .orElseThrow(() -> new NotFoundException("Counter not found"));
+
         if (!counter.getUser().getEmail().equals(email)) {
-            throw new RuntimeException("Access denied");
+            throw new ForbiddenException("Access denied");
         }
+
         counter.setStartDateTime(java.time.LocalDateTime.now());
-        counterRepository.save(counter);
+        return counterRepository.save(counter);
     }
 
+    @Transactional(readOnly = true)
     public Counter getCounterById(Long counterId, String email) {
         Counter counter = counterRepository.findById(counterId)
-                .orElseThrow(() -> new RuntimeException("Counter not found"));
+                .orElseThrow(() -> new NotFoundException("Counter not found"));
         if (!counter.getUser().getEmail().equals(email)) {
-            throw new RuntimeException("Access denied");
+            throw new ForbiddenException("Access denied");
         }
         return counter;
     }
