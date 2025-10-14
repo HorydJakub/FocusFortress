@@ -4,11 +4,13 @@ import com.focusfortress.dto.HabitDTO;
 import com.focusfortress.model.Habit;
 import com.focusfortress.service.HabitService;
 import com.focusfortress.service.HabitProgressService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.security.Principal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,15 +23,15 @@ public class HabitController {
     private final HabitProgressService habitProgressService;
 
     @PostMapping
-    public ResponseEntity<HabitDTO> createHabit(@RequestBody HabitDTO habitDTO) {
-        Habit saved = habitService.saveHabit(habitDTO);
+    public ResponseEntity<HabitDTO> createHabit(@Valid @RequestBody HabitDTO habitDTO, Principal principal) {
+        Habit saved = habitService.saveHabit(habitDTO, principal.getName());
         URI location = URI.create("/api/habits/" + saved.getId());
         return ResponseEntity.created(location).body(convertToDTO(saved));
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<HabitDTO>> getHabitsByUser(@PathVariable("userId") Long userId) {
-        List<Habit> habits = habitService.getHabitsByUserId(userId);
+    @GetMapping
+    public ResponseEntity<List<HabitDTO>> getUserHabits(Principal principal) {
+        List<Habit> habits = habitService.getUserHabits(principal.getName());
         return ResponseEntity.ok(
                 habits.stream()
                         .map(this::convertToDTO)
@@ -38,20 +40,20 @@ public class HabitController {
     }
 
     @DeleteMapping("/{habitId}")
-    public ResponseEntity<Void> deleteHabit(@PathVariable("habitId") Long habitId) {
-        habitService.deleteHabit(habitId);
+    public ResponseEntity<Void> deleteHabit(@PathVariable("habitId") Long habitId, Principal principal) {
+        habitService.deleteHabit(habitId, principal.getName());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{habitId}/done")
-    public ResponseEntity<Integer> markHabitDone(@PathVariable("habitId") Long habitId) {
-        int streak = habitProgressService.markDone(habitId);
+    public ResponseEntity<Integer> markHabitDone(@PathVariable("habitId") Long habitId, Principal principal) {
+        int streak = habitProgressService.markDone(habitId, principal.getName());
         return ResponseEntity.ok(streak);
     }
 
     @GetMapping("/{habitId}/streak")
-    public ResponseEntity<Integer> getCurrentStreak(@PathVariable("habitId") Long habitId) {
-        int streak = habitProgressService.getCurrentStreak(habitId);
+    public ResponseEntity<Integer> getCurrentStreak(@PathVariable("habitId") Long habitId, Principal principal) {
+        int streak = habitProgressService.getCurrentStreak(habitId, principal.getName());
         return ResponseEntity.ok(streak);
     }
 
@@ -65,7 +67,6 @@ public class HabitController {
         dto.setImageUrl(habit.getImageUrl());
         dto.setDurationDays(habit.getDurationDays());
         dto.setPredefined(habit.isPredefined());
-        dto.setUserId(habit.getUser() != null ? habit.getUser().getId() : null);
         return dto;
     }
 }
