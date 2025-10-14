@@ -1,27 +1,34 @@
 package com.focusfortress.service;
 
-import com.focusfortress.dto.HabitProgressDTO;
-import com.focusfortress.mapper.HabitProgressMapper;
+import com.focusfortress.exception.ForbiddenException;
+import com.focusfortress.exception.NotFoundException;
 import com.focusfortress.model.Habit;
 import com.focusfortress.model.HabitProgress;
 import com.focusfortress.repository.HabitProgressRepository;
 import com.focusfortress.repository.HabitRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @RequiredArgsConstructor
 @Service
+@Transactional
 public class HabitProgressService {
 
     private final HabitProgressRepository habitProgressRepository;
     private final HabitRepository habitRepository;
 
-    public int markDone(Long habitId) {
+    public int markDone(Long habitId, String email) {
         Habit habit = habitRepository.findById(habitId)
-                .orElseThrow(() -> new IllegalArgumentException("Habit not found"));
+                .orElseThrow(() -> new NotFoundException("Habit not found"));
+
+        if (!habit.getUser().getEmail().equals(email)) {
+            throw new ForbiddenException("Access denied");
+        }
+
         LocalDate today = LocalDate.now();
 
         if (habitProgressRepository.findByHabitAndDate(habit, today).isPresent()) {
@@ -33,33 +40,25 @@ public class HabitProgressService {
         progress.setDate(today);
         habitProgressRepository.save(progress);
 
-        List<HabitProgress> progressList = habitProgressRepository.findByHabitOrderByDateDesc(habit);
-
-        int streak = 0;
-        LocalDate day = today;
-        for (HabitProgress hp : progressList) {
-            if (hp.getDate().equals(day)) {
-                streak++;
-                day = day.minusDays(1);
-            } else {
-                break;
-            }
-        }
-
-        if (streak >= habit.getDurationDays()) {
-
-        }
-
-        return streak;
+        return calculateStreak(habit, today);
     }
 
-    public int getCurrentStreak(Long habitId) {
+    @Transactional(readOnly = true)
+    public int getCurrentStreak(Long habitId, String email) {
         Habit habit = habitRepository.findById(habitId)
-                .orElseThrow(() -> new IllegalArgumentException("Habit not found"));
+                .orElseThrow(() -> new NotFoundException("Habit not found"));
 
+        if (!habit.getUser().getEmail().equals(email)) {
+            throw new ForbiddenException("Access denied");
+        }
+
+        return calculateStreak(habit, LocalDate.now());
+    }
+
+    private int calculateStreak(Habit habit, LocalDate startDate) {
         List<HabitProgress> progressList = habitProgressRepository.findByHabitOrderByDateDesc(habit);
         int streak = 0;
-        LocalDate day = LocalDate.now();
+        LocalDate day = startDate;
 
         for (HabitProgress hp : progressList) {
             if (hp.getDate().equals(day)) {
@@ -69,6 +68,7 @@ public class HabitProgressService {
                 break;
             }
         }
+
         return streak;
     }
 }
