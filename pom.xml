@@ -18,6 +18,7 @@
         <spring-security.version>6.4.3</spring-security.version>
         <lombok.version>1.18.26</lombok.version>
         <jackson.databind.version>2.19.0</jackson.databind.version>
+        <h2.version>2.3.232</h2.version>
     </properties>
 
     <dependencies>
@@ -83,6 +84,13 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.databind.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- Spring Security Crypto  -->
