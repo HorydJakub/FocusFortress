@@ -42,3 +42,12 @@ application.properties
 
 # Other
 .idea
+
+# Frontend
+frontend/package-lock.json
+frontend/node_modules/
+frontend/build/
+frontend/.env
+
+# Logs
+*.log
