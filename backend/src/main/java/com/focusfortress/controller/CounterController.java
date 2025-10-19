@@ -39,6 +39,12 @@ public class CounterController {
         );
     }
 
+    @GetMapping("/{counterId}")
+    public ResponseEntity<CounterDTO> getCounterById(@PathVariable("counterId") Long counterId, Principal principal) {
+        Counter counter = counterService.getCounterById(counterId, principal.getName());
+        return ResponseEntity.ok(convertToDTO(counter));
+    }
+
     @DeleteMapping("/{counterId}")
     public ResponseEntity<Void> deleteCounter(@PathVariable("counterId") Long counterId, Principal principal) {
         counterService.deleteCounter(counterId, principal.getName());
