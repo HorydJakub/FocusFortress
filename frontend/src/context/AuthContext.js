@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import authService from '../services/authService';
+import api from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -8,11 +9,53 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-    }
-    setLoading(false);
+    const verifyToken = async () => {
+      const token = localStorage.getItem('token');
+      const currentUser = localStorage.getItem('user');
+
+      if (!token || !currentUser) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Validate token locally by checking JWT expiration
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const tokenPayload = JSON.parse(atob(parts[1]));
+          const expirationTime = tokenPayload.exp * 1000; // Convert to milliseconds
+
+          if (Date.now() >= expirationTime) {
+            console.log('Token expired, logging out...');
+            authService.logout();
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+
+          // Token looks not expired -> accept user locally without calling a protected endpoint
+          setUser(currentUser);
+        } else {
+          // Not a JWT: as a fallback, try a lightweight authenticated call to confirm token
+          try {
+            await api.get('/habits');
+            setUser(currentUser);
+          } catch (e) {
+            console.error('Token verification failed:', e);
+            authService.logout();
+            setUser(null);
+          }
+        }
+      } catch (error) {
+        console.error('Token verification/decoding failed:', error);
+        authService.logout();
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifyToken();
   }, []);
 
   const login = async (email, password) => {
