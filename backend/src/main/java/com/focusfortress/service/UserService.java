@@ -36,6 +36,8 @@ public class UserService {
                 token
         );
 
+        user.setTimezone("Europe/Warsaw"); // Default value, user can change it later
+
         userRepository.save(user);
         emailService.sendVerificationEmail(user.getEmail(), token);
 
@@ -45,10 +47,11 @@ public class UserService {
     @Transactional
     public void verifyUser(String token) {
         User user = userRepository.findByVerificationToken(token)
-                .orElseThrow(() -> new IllegalStateException("Invalid token"));
-        user.setVerified(true);
+                .orElseThrow(() -> new IllegalStateException("Invalid verification token"));
+
         user.setRole(Role.USER);
+        user.setVerificationToken(null);
+
         userRepository.save(user);
     }
-
 }
