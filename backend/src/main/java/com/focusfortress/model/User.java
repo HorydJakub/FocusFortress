@@ -3,8 +3,10 @@ package com.focusfortress.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users", uniqueConstraints = {@UniqueConstraint(columnNames = "email")})
@@ -36,10 +38,26 @@ public class User {
     private String password;
 
     private String verificationToken;
-    private boolean verified = false;
 
     @Enumerated(EnumType.STRING)
-    private Role role;
+    private Role role = Role.UNVERIFIED;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    private LocalDateTime lastLoginAt;
+
+    private String avatarUrl;
+
+    @Column(length = 500)
+    private String bio;
+
+    private String timezone;  // e.g. "Europe/Warsaw"
+
+    public boolean isVerified() {
+        return role != Role.UNVERIFIED;
+    }
 
     public User(String name, String email, LocalDate dateOfBirth, String gender, String password, String verificationToken) {
         this.name = name;
@@ -48,7 +66,6 @@ public class User {
         this.gender = gender;
         this.password = password;
         this.verificationToken = verificationToken;
-        this.verified = false;
         this.role = Role.UNVERIFIED;
     }
 }

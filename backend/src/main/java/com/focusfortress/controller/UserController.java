@@ -17,6 +17,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -29,6 +31,13 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(@Valid @RequestBody UserRegistrationDTO userDTO) {
+        if (!userDTO.isPasswordMatching()) {
+            return ResponseEntity.badRequest().body("Passwords do not match!");
+        }
+        if (!userDTO.isGenderValid()) {
+            return ResponseEntity.badRequest().body("Invalid gender value!");
+        }
+
         userService.registerUser(userDTO);
         return ResponseEntity.ok("Account created successfully! Please verify your email.");
     }
@@ -53,6 +62,9 @@ public class UserController {
         if (!user.isVerified()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email not verified!");
         }
+
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getEmail());
 

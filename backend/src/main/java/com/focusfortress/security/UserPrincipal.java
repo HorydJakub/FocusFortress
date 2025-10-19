@@ -1,6 +1,8 @@
 package com.focusfortress.security;
 
 import com.focusfortress.model.User;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -8,19 +10,17 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.Collections;
 
+@RequiredArgsConstructor
+@Getter
 public class UserPrincipal implements UserDetails {
-    private final User user;
 
-    public UserPrincipal(User user) {
-        this.user = user;
-    }
+    private final User user;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (user.getRole() != null) {
-            return Collections.singletonList(new SimpleGrantedAuthority(user.getRole().name()));
-        }
-        return Collections.emptyList();
+        return user.getRole() != null
+                ? Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+                : Collections.emptyList();
     }
 
     @Override
@@ -52,9 +52,4 @@ public class UserPrincipal implements UserDetails {
     public boolean isEnabled() {
         return user.isVerified();
     }
-
-    public User getUser() {
-        return user;
-    }
 }
-
