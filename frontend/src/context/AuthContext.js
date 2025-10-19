@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import authService from '../services/authService';
+import api from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -8,11 +9,41 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-    }
-    setLoading(false);
+    const verifyToken = async () => {
+      const token = localStorage.getItem('token');
+      const currentUser = localStorage.getItem('user');
+
+      if (!token || !currentUser) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        await api.get('/habits');
+
+        // Check if token is expired
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+        const expirationTime = tokenPayload.exp * 1000; // Convert to milliseconds
+
+        if (Date.now() >= expirationTime) {
+          console.log('Token expired, logging out...');
+          authService.logout();
+          setUser(null);
+        } else {
+          setUser(currentUser);
+        }
+      } catch (error) {
+        console.error('Token verification failed:', error);
+
+        // Token is invalid or API request failed
+        authService.logout();
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifyToken();
   }, []);
 
   const login = async (email, password) => {
