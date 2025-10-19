@@ -19,23 +19,35 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        await api.get('/habits');
+        // Validate token locally by checking JWT expiration
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const tokenPayload = JSON.parse(atob(parts[1]));
+          const expirationTime = tokenPayload.exp * 1000; // Convert to milliseconds
 
-        // Check if token is expired
-        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-        const expirationTime = tokenPayload.exp * 1000; // Convert to milliseconds
+          if (Date.now() >= expirationTime) {
+            console.log('Token expired, logging out...');
+            authService.logout();
+            setUser(null);
+            setLoading(false);
+            return;
+          }
 
-        if (Date.now() >= expirationTime) {
-          console.log('Token expired, logging out...');
-          authService.logout();
-          setUser(null);
-        } else {
+          // Token looks not expired -> accept user locally without calling a protected endpoint
           setUser(currentUser);
+        } else {
+          // Not a JWT: as a fallback, try a lightweight authenticated call to confirm token
+          try {
+            await api.get('/habits');
+            setUser(currentUser);
+          } catch (e) {
+            console.error('Token verification failed:', e);
+            authService.logout();
+            setUser(null);
+          }
         }
       } catch (error) {
-        console.error('Token verification failed:', error);
-
-        // Token is invalid or API request failed
+        console.error('Token verification/decoding failed:', error);
         authService.logout();
         setUser(null);
       } finally {
