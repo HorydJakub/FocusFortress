@@ -51,3 +51,4 @@ frontend/.env
 
 # Logs
 *.log
+/frontend/public/index.html
