@@ -9,7 +9,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class HabitDTO {
-
     private Long id;
 
     @NotBlank(message = "Name is required")
@@ -28,4 +27,6 @@ public class HabitDTO {
 
     @Positive(message = "Duration must be positive")
     private int durationDays;
+
+    private Integer currentStreak;
 }

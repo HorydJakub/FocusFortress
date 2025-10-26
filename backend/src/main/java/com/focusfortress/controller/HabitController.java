@@ -76,9 +76,17 @@ public class HabitController {
     @GetMapping
     public ResponseEntity<List<HabitDTO>> getUserHabits(Principal principal) {
         List<Habit> habits = habitService.getUserHabits(principal.getName());
+
+        // return habits with current streaks
         return ResponseEntity.ok(
                 habits.stream()
-                        .map(this::convertToDTO)
+                        .map(habit -> {
+                            HabitDTO dto = convertToDTO(habit);
+                            dto.setCurrentStreak(
+                                    habitProgressService.getCurrentStreak(habit.getId(), principal.getName())
+                            );
+                            return dto;
+                        })
                         .collect(Collectors.toList())
         );
     }
