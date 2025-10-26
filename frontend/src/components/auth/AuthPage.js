@@ -416,7 +416,7 @@ const AuthPage = () => {
         </div>
 
         <p style={{ textAlign: 'center', color: '#999', marginTop: '24px', fontSize: '14px' }}>
-          © 2024 FocusFortress. Build your fortress of good habits.
+          © 2025 FocusFortress. Build your fortress of good habits.
         </p>
       </div>
     </div>
