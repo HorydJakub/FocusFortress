@@ -9,6 +9,7 @@
     "react-scripts": "5.0.1",
     "axios": "^1.6.0",
     "lucide-react": "^0.263.1",
+    "emoji-picker-react": "^4.14.1",
     "web-vitals": "^3.5.0"
   },
   "scripts": {
