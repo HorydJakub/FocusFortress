@@ -79,6 +79,32 @@ public class CounterService {
         return counterRepository.save(counter);
     }
 
+    public Counter updateCounter(Long counterId, String email, CounterDTO counterDTO) {
+        Counter counter = counterRepository.findById(counterId)
+                .orElseThrow(() -> new NotFoundException("Counter not found"));
+
+        if (!counter.getUser().getEmail().equals(email)) {
+            throw new ForbiddenException("Access denied");
+        }
+
+        if (counterDTO.getName() != null && !counterDTO.getName().equals(counter.getName())) {
+            if (counterRepository.existsByUserIdAndName(counter.getUser().getId(), counterDTO.getName())) {
+                throw new IllegalArgumentException("Counter with this name already exists for the user");
+            }
+            counter.setName(counterDTO.getName());
+        }
+
+        if (counterDTO.getDescription() != null) {
+            counter.setDescription(counterDTO.getDescription());
+        }
+
+        if (counterDTO.getIcon() != null) {
+            counter.setIcon(counterDTO.getIcon());
+        }
+
+        return counterRepository.save(counter);
+    }
+
     @Transactional(readOnly = true)
     public Counter getCounterById(Long counterId, String email) {
         Counter counter = counterRepository.findById(counterId)
