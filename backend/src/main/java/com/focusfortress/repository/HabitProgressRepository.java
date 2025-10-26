@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface HabitProgressRepository extends JpaRepository<HabitProgress, Long> {
     List<HabitProgress> findByHabitOrderByDateDesc(Habit habit);
     Optional<HabitProgress> findByHabitAndDate(Habit habit, LocalDate date);
+    void deleteByHabitId(Long habitId);
 }

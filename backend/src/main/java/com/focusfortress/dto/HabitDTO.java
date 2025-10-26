@@ -19,17 +19,13 @@ public class HabitDTO {
     @Size(max = 500, message = "Description must be at most 500 characters")
     private String description;
 
-    @Size(max = 100, message = "Category must be at most 100 characters")
-    private String category;
+    private Long categoryId;
 
-    @Size(max = 100, message = "Subcategory must be at most 100 characters")
-    private String subcategory;
+    private Long subcategoryId;
 
-    @Size(max = 255, message = "Image URL must be at most 255 characters")
-    private String imageUrl;
+    @Size(max = 5, message = "Icon must be at most 5 characters")
+    private String icon;
 
     @Positive(message = "Duration must be positive")
     private int durationDays;
-
-    private boolean predefined;
 }

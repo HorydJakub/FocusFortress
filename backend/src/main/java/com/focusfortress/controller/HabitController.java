@@ -1,5 +1,6 @@
 package com.focusfortress.controller;
 
+import com.focusfortress.dto.CategoryTreeDTO;
 import com.focusfortress.dto.HabitDTO;
 import com.focusfortress.model.Habit;
 import com.focusfortress.service.HabitService;
@@ -21,6 +22,49 @@ public class HabitController {
 
     private final HabitService habitService;
     private final HabitProgressService habitProgressService;
+
+    @GetMapping("/tree")
+    public ResponseEntity<List<CategoryTreeDTO>> getHabitsTree(Principal principal) {
+        return ResponseEntity.ok(habitService.getHabitsTree(principal.getName()));
+    }
+
+    @GetMapping("/by-category/{categoryId}")
+    public ResponseEntity<List<HabitDTO>> getUserHabitsByCategory(
+            @PathVariable("categoryId") Long categoryId,
+            Principal principal) {
+        List<Habit> habits = habitService.getUserHabitsByCategory(principal.getName(), categoryId);
+        return ResponseEntity.ok(
+                habits.stream()
+                        .map(this::convertToDTO)
+                        .collect(Collectors.toList())
+        );
+    }
+
+    @GetMapping("/by-subcategory/{subcategoryId}")
+    public ResponseEntity<List<HabitDTO>> getUserHabitsBySubcategory(
+            @PathVariable("subcategoryId") Long subcategoryId,
+            Principal principal) {
+        List<Habit> habits = habitService.getUserHabitsBySubcategory(principal.getName(), subcategoryId);
+        return ResponseEntity.ok(
+                habits.stream()
+                        .map(this::convertToDTO)
+                        .collect(Collectors.toList())
+        );
+    }
+
+    @GetMapping("/by-category/{categoryId}/by-subcategory/{subcategoryId}")
+    public ResponseEntity<List<HabitDTO>> getUserHabitsByCategoryAndSubcategory(
+            @PathVariable("categoryId") Long categoryId,
+            @PathVariable("subcategoryId") Long subcategoryId,
+            Principal principal) {
+        List<Habit> habits = habitService.getUserHabitsByCategoryAndSubcategory(
+                principal.getName(), categoryId, subcategoryId);
+        return ResponseEntity.ok(
+                habits.stream()
+                        .map(this::convertToDTO)
+                        .collect(Collectors.toList())
+        );
+    }
 
     @PostMapping
     public ResponseEntity<HabitDTO> createHabit(@Valid @RequestBody HabitDTO habitDTO, Principal principal) {
@@ -62,11 +106,10 @@ public class HabitController {
         dto.setId(habit.getId());
         dto.setName(habit.getName());
         dto.setDescription(habit.getDescription());
-        dto.setCategory(habit.getCategory());
-        dto.setSubcategory(habit.getSubcategory());
-        dto.setImageUrl(habit.getImageUrl());
+        dto.setCategoryId(habit.getCategory() != null ? habit.getCategory().getId() : null);
+        dto.setSubcategoryId(habit.getSubcategory() != null ? habit.getSubcategory().getId() : null);
+        dto.setIcon(habit.getIcon());
         dto.setDurationDays(habit.getDurationDays());
-        dto.setPredefined(habit.isPredefined());
         return dto;
     }
 }

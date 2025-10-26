@@ -12,7 +12,6 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-
 public class Habit {
 
     @Id
@@ -26,22 +25,22 @@ public class Habit {
     @Column(length = 500)
     private String description;
 
-    @Column(length = 100)
-    private String category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
 
-    @Column(length = 100)
-    private String subcategory;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subcategory_id")
+    private Subcategory subcategory;
 
-    private String imageUrl;
+    @Column(length = 5)
+    private String icon;
 
     @Positive(message = "Duration must be positive")
     @Column(nullable = false)
     private int durationDays;
 
-    @Column(nullable = false)
-    private boolean predefined;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }
