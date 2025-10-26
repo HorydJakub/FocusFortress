@@ -28,6 +28,7 @@ public class HabitService {
     private final CategoryRepository categoryRepository;
     private final SubcategoryRepository subcategoryRepository;
     private final HabitProgressRepository habitProgressRepository;
+    private final HabitProgressService habitProgressService;
 
     @Transactional(readOnly = true)
     public List<Habit> getUserHabitsByCategory(String email, Long categoryId) {
@@ -123,14 +124,14 @@ public class HabitService {
         List<Category> categories = categoryRepository.findAll();
 
         return categories.stream()
-                .map(category -> buildCategoryTree(category, userHabits))
+                .map(category -> buildCategoryTree(category, userHabits, email))
                 .collect(Collectors.toList());
     }
 
-    private CategoryTreeDTO buildCategoryTree(Category category, List<Habit> userHabits) {
+    private CategoryTreeDTO buildCategoryTree(Category category, List<Habit> userHabits, String email) {
         List<Subcategory> subcategories = subcategoryRepository.findByCategoryId(category.getId());
         List<SubcategoryTreeDTO> subcategoryTrees = subcategories.stream()
-                .map(subcategory -> buildSubcategoryTree(subcategory, userHabits))
+                .map(subcategory -> buildSubcategoryTree(subcategory, userHabits, email))
                 .collect(Collectors.toList());
 
         return new CategoryTreeDTO(
@@ -141,11 +142,18 @@ public class HabitService {
         );
     }
 
-    private SubcategoryTreeDTO buildSubcategoryTree(Subcategory subcategory, List<Habit> userHabits) {
+    private SubcategoryTreeDTO buildSubcategoryTree(Subcategory subcategory, List<Habit> userHabits, String email) {
         List<HabitDTO> habits = userHabits.stream()
                 .filter(habit -> habit.getSubcategory() != null &&
                         habit.getSubcategory().getId().equals(subcategory.getId()))
-                .map(this::convertToDTO)
+                .map(habit -> {
+                    HabitDTO dto = convertToDTO(habit);
+                    // Count current streak for each habit
+                    dto.setCurrentStreak(
+                            habitProgressService.getCurrentStreak(habit.getId(), email)
+                    );
+                    return dto;
+                })
                 .collect(Collectors.toList());
 
         return new SubcategoryTreeDTO(
