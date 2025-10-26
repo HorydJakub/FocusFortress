@@ -57,6 +57,15 @@ public class CounterController {
         return ResponseEntity.ok(convertToDTO(updatedCounter));
     }
 
+    @PutMapping("/{counterId}")
+    public ResponseEntity<CounterDTO> updateCounter(
+            @PathVariable("counterId") Long counterId,
+            @Valid @RequestBody CounterDTO counterDTO,
+            Principal principal) {
+        Counter updatedCounter = counterService.updateCounter(counterId, principal.getName(), counterDTO);
+        return ResponseEntity.ok(convertToDTO(updatedCounter));
+    }
+
     private CounterDTO convertToDTO(Counter counter) {
         CounterDTO dto = new CounterDTO();
         dto.setId(counter.getId());
