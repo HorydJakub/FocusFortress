@@ -358,7 +358,7 @@ const Counters = () => {
                   {formatTime(currentTimes[counter.id])}
                 </div>
                 <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>
-                  Days :: Hours :: Minutes :: Seconds without {counter.name}
+                  Days :: Hours :: Minutes :: Seconds without: {counter.name}
                 </div>
               </div>
 

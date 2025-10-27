@@ -5,6 +5,7 @@ import com.focusfortress.dto.HabitDTO;
 import com.focusfortress.dto.SubcategoryTreeDTO;
 import com.focusfortress.exception.ForbiddenException;
 import com.focusfortress.exception.NotFoundException;
+import com.focusfortress.exception.ResourceNotFoundException;
 import com.focusfortress.model.Category;
 import com.focusfortress.model.Habit;
 import com.focusfortress.model.Subcategory;
@@ -80,6 +81,33 @@ public class HabitService {
                 .durationDays(habitDTO.getDurationDays())
                 .user(user)
                 .build();
+
+        return habitRepository.save(habit);
+    }
+
+    public Habit updateHabit(Long habitId, HabitDTO habitDTO, String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Habit habit = habitRepository.findByIdAndUserId(habitId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Habit not found"));
+
+        Category category = categoryRepository.findById(habitDTO.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+
+        Subcategory subcategory = subcategoryRepository.findById(habitDTO.getSubcategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Subcategory not found"));
+
+        if (!subcategory.getCategory().getId().equals(category.getId())) {
+            throw new IllegalArgumentException("Subcategory does not belong to the selected category");
+        }
+
+        habit.setName(habitDTO.getName());
+        habit.setDescription(habitDTO.getDescription());
+        habit.setIcon(habitDTO.getIcon());
+        habit.setDurationDays(habitDTO.getDurationDays());
+        habit.setCategory(category);
+        habit.setSubcategory(subcategory);
 
         return habitRepository.save(habit);
     }

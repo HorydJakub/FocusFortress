@@ -73,6 +73,15 @@ public class HabitController {
         return ResponseEntity.created(location).body(convertToDTO(saved));
     }
 
+    @PutMapping("/{habitId}")
+    public ResponseEntity<HabitDTO> updateHabit(
+            @PathVariable("habitId") Long habitId,
+            @Valid @RequestBody HabitDTO habitDTO,
+            Principal principal) {
+        Habit updated = habitService.updateHabit(habitId, habitDTO, principal.getName());
+        return ResponseEntity.ok(convertToDTO(updated));
+    }
+
     @GetMapping
     public ResponseEntity<List<HabitDTO>> getUserHabits(Principal principal) {
         List<Habit> habits = habitService.getUserHabits(principal.getName());
