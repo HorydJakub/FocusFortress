@@ -40,8 +40,37 @@ const Habits = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const dropdownRef = useRef(null);
 
-  // Track which habits were marked done today
-  const [markedDoneToday, setMarkedDoneToday] = useState(new Set());
+  // Track which habits were marked done today - with localStorage
+  const [markedDoneToday, setMarkedDoneToday] = useState(() => {
+    try {
+      const stored = localStorage.getItem('markedDoneToday');
+      if (stored) {
+        const { date, habitIds } = JSON.parse(stored);
+        const today = new Date().toDateString();
+        // Only use stored data if it's from today
+        if (date === today) {
+          return new Set(habitIds);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load markedDoneToday from localStorage:', e);
+    }
+    return new Set();
+  });
+
+  // Save markedDoneToday to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const today = new Date().toDateString();
+      const data = {
+        date: today,
+        habitIds: Array.from(markedDoneToday)
+      };
+      localStorage.setItem('markedDoneToday', JSON.stringify(data));
+    } catch (e) {
+      console.error('Failed to save markedDoneToday to localStorage:', e);
+    }
+  }, [markedDoneToday]);
 
   // Available subcategories for selected category in habit modal
   const [availableSubcategories, setAvailableSubcategories] = useState([]);
@@ -380,8 +409,8 @@ const Habits = () => {
       await fetchHabits(); // Refresh to update streak
     } catch (e) {
       console.error('Failed to mark habit as done:', e);
-      if (e.response?.data?.message?.includes('Already marked')) {
-        alert('You already marked this habit as done today!');
+      if (e.response?.data?.message?.includes('Already marked') || e.response?.data?.message?.includes('already marked')) {
+        // Backend says it's already marked, so update our state
         setMarkedDoneToday(prev => new Set([...prev, habitId]));
       } else {
         alert(e.response?.data?.message || 'Failed to mark habit as done');
@@ -726,7 +755,7 @@ const Habits = () => {
         {/* Table Header */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1.5fr 80px',
+          gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1.5fr 1.5fr 80px',
           gap: '16px',
           padding: '20px 24px',
           background: '#f8f8f8',
@@ -739,17 +768,21 @@ const Habits = () => {
           <div>CATEGORY</div>
           <div>SUBCATEGORY</div>
           <div style={{ textAlign: 'center' }}>STREAK</div>
+          <div style={{ textAlign: 'center' }}>PROGRESS</div>
           <div style={{ textAlign: 'center' }}>MARK DONE</div>
           <div></div>
         </div>
 
         {/* Table Rows */}
-        {sortedHabits.map((habit) => (
+        {sortedHabits.map((habit) => {
+          const progress = Math.min((habit.currentStreak / habit.durationDays) * 100, 100);
+
+          return (
           <div
             key={habit.id}
             style={{
               display: 'grid',
-              gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1.5fr 80px',
+              gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1.5fr 1.5fr 80px',
               gap: '16px',
               padding: '20px 24px',
               borderBottom: '1px solid #f0f0f0',
@@ -762,7 +795,7 @@ const Habits = () => {
             {/* Habit Name with Icon */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
-                fontSize: '32px',
+                fontSize: '24px',
                 flexShrink: 0
               }}>
                 {habit.icon || '🎯'}
@@ -860,6 +893,93 @@ const Habits = () => {
               }}>
                 {habit.currentStreak > 0 && <Flame size={16} />}
                 {habit.currentStreak} {habit.currentStreak === 1 ? 'day' : 'days'}
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div style={{ textAlign: 'center', position: 'relative' }}>
+              <div
+                style={{
+                  position: 'relative',
+
+                  width: '100%',
+                  height: '24px',
+                  background: '#f0f0f0',
+                  borderRadius: '14px',
+                  overflow: 'hidden',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  const tooltip = e.currentTarget.nextElementSibling;
+                  if (tooltip) tooltip.style.opacity = '1';
+                }}
+                onMouseLeave={(e) => {
+                  const tooltip = e.currentTarget.nextElementSibling;
+                  if (tooltip) tooltip.style.opacity = '0';
+                }}
+              >
+                {/* Progress fill */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  height: '100%',
+                  width: `${progress}%`,
+                  background: progress === 100
+                    ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'
+                    : 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                  transition: 'width 0.3s ease',
+                  borderRadius: '14px'
+                }} />
+                {/* Progress text */}
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  color: progress > 50 ? 'white' : '#333',
+                  textShadow: progress > 50 ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
+                  zIndex: 1
+                }}>
+                  {progress.toFixed(0)}%
+                </div>
+              </div>
+              {/* Custom Tooltip */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  marginBottom: '8px',
+                  padding: '8px 12px',
+                  background: '#333',
+                  color: 'white',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  whiteSpace: 'nowrap',
+                  opacity: 0,
+                  pointerEvents: 'none',
+                  transition: 'opacity 0.2s',
+                  zIndex: 1000,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                }}
+              >
+                {habit.currentStreak}/{habit.durationDays} days completed
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: 0,
+                  height: 0,
+                  borderLeft: '6px solid transparent',
+                  borderRight: '6px solid transparent',
+                  borderTop: '6px solid #333'
+                }} />
               </div>
             </div>
 
@@ -1010,7 +1130,8 @@ const Habits = () => {
               )}
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
     );
   };
