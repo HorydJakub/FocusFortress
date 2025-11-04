@@ -127,6 +127,7 @@ public class HabitController {
         dto.setSubcategoryId(habit.getSubcategory() != null ? habit.getSubcategory().getId() : null);
         dto.setIcon(habit.getIcon());
         dto.setDurationDays(habit.getDurationDays());
+        dto.setDone(habit.isDone());
         return dto;
     }
 }
