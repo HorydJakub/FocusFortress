@@ -29,4 +29,6 @@ public class HabitDTO {
     private int durationDays;
 
     private Integer currentStreak;
+
+    private boolean done;
 }

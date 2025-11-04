@@ -80,6 +80,7 @@ public class HabitService {
                 .icon(habitDTO.getIcon())
                 .durationDays(habitDTO.getDurationDays())
                 .user(user)
+                .done(false)
                 .build();
 
         return habitRepository.save(habit);
@@ -91,6 +92,11 @@ public class HabitService {
 
         Habit habit = habitRepository.findByIdAndUserId(habitId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Habit not found"));
+
+        // Don't allow editing completed habits
+        if (habit.isDone()) {
+            throw new IllegalStateException("Cannot edit a completed habit");
+        }
 
         Category category = categoryRepository.findById(habitDTO.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
@@ -201,6 +207,7 @@ public class HabitService {
         dto.setSubcategoryId(habit.getSubcategory() != null ? habit.getSubcategory().getId() : null);
         dto.setIcon(habit.getIcon());
         dto.setDurationDays(habit.getDurationDays());
+        dto.setDone(habit.isDone());
         return dto;
     }
 }

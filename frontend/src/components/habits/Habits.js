@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import api from '../../services/api';
-import { Target, Plus, X, Trash2, Edit2, ChevronRight, FolderOpen, Smile, ArrowLeft, MoreVertical, CheckCircle, Flame, Layers, Info } from 'lucide-react';
+import { Target, Plus, X, Trash2, Edit2, ChevronRight, FolderOpen, Smile, ArrowLeft, MoreVertical, CheckCircle, Flame, Layers, Info, Award, Trophy, Star } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 
 const Habits = () => {
@@ -47,7 +47,6 @@ const Habits = () => {
       if (stored) {
         const { date, habitIds } = JSON.parse(stored);
         const today = new Date().toDateString();
-        // Only use stored data if it's from today
         if (date === today) {
           return new Set(habitIds);
         }
@@ -57,6 +56,15 @@ const Habits = () => {
     }
     return new Set();
   });
+
+  const [availableSubcategories, setAvailableSubcategories] = useState([]);
+  const [canAddHabit, setCanAddHabit] = useState(false);
+  const [categoriesWithSubcategories, setCategoriesWithSubcategories] = useState([]);
+  const [allSubcategories, setAllSubcategories] = useState([]);
+
+  // Celebration state for completed habits
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [completedHabitName, setCompletedHabitName] = useState('');
 
   // Save markedDoneToday to localStorage whenever it changes
   useEffect(() => {
@@ -71,18 +79,6 @@ const Habits = () => {
       console.error('Failed to save markedDoneToday to localStorage:', e);
     }
   }, [markedDoneToday]);
-
-  // Available subcategories for selected category in habit modal
-  const [availableSubcategories, setAvailableSubcategories] = useState([]);
-
-  // State to track if user can create habits (needs category with subcategories)
-  const [canAddHabit, setCanAddHabit] = useState(false);
-
-  // Categories with subcategories (for filtering in habit modal)
-  const [categoriesWithSubcategories, setCategoriesWithSubcategories] = useState([]);
-
-  // All subcategories (for displaying names in table)
-  const [allSubcategories, setAllSubcategories] = useState([]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -214,7 +210,7 @@ const Habits = () => {
       });
 
       await fetchCategories();
-      await fetchHabits(); // Refresh habits to show updated category names
+      await fetchHabits();
       setEditingCategory(null);
       setShowEmojiPicker(false);
     } catch (e) {
@@ -260,7 +256,7 @@ const Habits = () => {
       });
 
       await fetchSubcategories(selectedCategory.id);
-      await fetchCategories(); // Refresh to update canAddHabit check
+      await fetchCategories();
       setShowSubcategoryModal(false);
       resetSubcategoryForm();
     } catch (e) {
@@ -283,7 +279,7 @@ const Habits = () => {
       });
 
       await fetchSubcategories(selectedCategory.id);
-      await fetchHabits(); // Refresh habits to show updated subcategory names
+      await fetchHabits();
       setEditingSubcategory(null);
       setShowEmojiPicker(false);
     } catch (e) {
@@ -373,7 +369,7 @@ const Habits = () => {
         durationDays: editingHabit.durationDays
       });
 
-      await fetchHabits(); // Refresh habits list
+      await fetchHabits();
       setEditingHabit(null);
       setShowEmojiPicker(false);
       setAvailableSubcategories([]);
@@ -384,7 +380,12 @@ const Habits = () => {
   };
 
   const handleDeleteHabit = async (habitId) => {
-    if (!window.confirm('Are you sure you want to delete this habit? This will also delete all progress.')) {
+    const habit = habits.find(h => h.id === habitId);
+    const confirmMessage = habit?.done
+      ? 'Are you sure you want to delete this completed habit? This will permanently remove all progress.'
+      : 'Are you sure you want to delete this habit? This will also delete all progress.';
+
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
@@ -404,13 +405,25 @@ const Habits = () => {
 
   const handleMarkDone = async (habitId) => {
     try {
-      await api.post(`/habits/${habitId}/done`);
+      const habit = habits.find(h => h.id === habitId);
+      const response = await api.post(`/habits/${habitId}/done`);
+      const newStreak = response.data;
+
       setMarkedDoneToday(prev => new Set([...prev, habitId]));
-      await fetchHabits(); // Refresh to update streak
+
+      // Check if habit was just completed
+      if (habit && newStreak >= habit.durationDays) {
+        setCompletedHabitName(habit.name);
+        setShowCelebration(true);
+        setTimeout(() => setShowCelebration(false), 5000);
+      }
+
+      await fetchHabits(); // Refresh to update done status
     } catch (e) {
       console.error('Failed to mark habit as done:', e);
-      if (e.response?.data?.message?.includes('Already marked') || e.response?.data?.message?.includes('already marked')) {
-        // Backend says it's already marked, so update our state
+      if (e.response?.data?.message?.includes('Already marked') ||
+          e.response?.data?.message?.includes('already marked') ||
+          e.response?.data?.message?.includes('already completed')) {
         setMarkedDoneToday(prev => new Set([...prev, habitId]));
       } else {
         alert(e.response?.data?.message || 'Failed to mark habit as done');
@@ -479,11 +492,14 @@ const Habits = () => {
   };
 
   const openEditHabitModal = (habit) => {
+    if (habit.done) {
+      alert('Cannot edit completed habits. You can only delete them.');
+      return;
+    }
     setEditingHabit({ ...habit });
     setShowEmojiPicker(false);
   };
 
-  // Check if user can create habits (needs at least one category with subcategories)
   // Check if user can create habits on mount and when categories change
   useEffect(() => {
     const checkCanCreate = async () => {
@@ -495,7 +511,6 @@ const Habits = () => {
         setCategoriesWithSubcategories(catsWithSubs);
         setCanAddHabit(catsWithSubs.length > 0);
 
-        // Collect all subcategories into a flat array for easy lookup
         const allSubs = treeRes.data.flatMap(category =>
           category.subcategories || []
         );
@@ -508,7 +523,7 @@ const Habits = () => {
       }
     };
     checkCanCreate();
-  }, [categories, habits]); // Re-check when categories or habits change
+  }, [categories, habits]);
 
   // Get category name by id
   const getCategoryName = (categoryId) => {
@@ -524,19 +539,55 @@ const Habits = () => {
 
   // Sort habits by category, then subcategory, then name
   const sortedHabits = [...habits].sort((a, b) => {
-    // First by category name
     const catA = categories.find(c => c.id === a.categoryId)?.name || '';
     const catB = categories.find(c => c.id === b.categoryId)?.name || '';
     if (catA !== catB) return catA.localeCompare(catB);
 
-    // Then by subcategory id (we don't have names loaded for all)
     if (a.subcategoryId !== b.subcategoryId) {
       return (a.subcategoryId || 0) - (b.subcategoryId || 0);
     }
 
-    // Finally by habit name
     return a.name.localeCompare(b.name);
   });
+
+  const inProgressHabits = sortedHabits.filter(h => !h.done);
+  const completedHabits = sortedHabits.filter(h => h.done);
+
+  // Celebration Modal for Completed Habits
+  const renderCelebrationModal = () => {
+    if (!showCelebration) return null;
+
+    return (
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 2000,
+        animation: 'slideIn 0.5s ease-out'
+      }}>
+        <div style={{
+          background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+          padding: '24px 32px',
+          borderRadius: '16px',
+          boxShadow: '0 8px 32px rgba(255, 165, 0, 0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          maxWidth: '400px'
+        }}>
+          <Trophy size={48} color="white" style={{ flexShrink: 0 }} />
+          <div>
+            <h3 style={{ margin: '0 0 8px 0', color: 'white', fontSize: '20px', fontWeight: 'bold' }}>
+              🎉 Congratulations!
+            </h3>
+            <p style={{ margin: 0, color: 'white', fontSize: '16px' }}>
+              You've completed <strong>"{completedHabitName}"</strong>!
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Render breadcrumb navigation
   const renderBreadcrumb = () => {
@@ -551,7 +602,6 @@ const Habits = () => {
         fontSize: '14px',
         color: '#666'
       }}>
-        {/* My Habits link */}
         <span
           onClick={() => {
             setSelectedCategory(null);
@@ -744,171 +794,170 @@ const Habits = () => {
   };
 
   // Render habits table
-  const renderHabitsTable = () => {
+  const renderHabitsTable = (habitsToRender, isCompleted = false) => {
+    if (habitsToRender.length === 0) return null;
+
     return (
       <div style={{
         background: 'white',
         borderRadius: '16px',
         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-        overflow: 'hidden'
+        marginBottom: '32px'
       }}>
         {/* Table Header */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1.5fr 1.5fr 80px',
+          gridTemplateColumns: isCompleted ? '2fr 1.5fr 1.5fr 1fr 1.5fr 80px' : '2fr 1.5fr 1.5fr 1fr 1.5fr 1.5fr 80px',
           gap: '16px',
           padding: '20px 24px',
-          background: '#f8f8f8',
+          background: isCompleted ? '#f0f7f0' : '#f8f8f8',
           borderBottom: '2px solid #e0e0e0',
           fontWeight: '600',
           fontSize: '14px',
-          color: '#666'
+          color: '#666',
+          borderTopLeftRadius: '16px',
+          borderTopRightRadius: '16px'
         }}>
           <div>HABIT</div>
           <div>CATEGORY</div>
           <div>SUBCATEGORY</div>
           <div style={{ textAlign: 'center' }}>STREAK</div>
           <div style={{ textAlign: 'center' }}>PROGRESS</div>
-          <div style={{ textAlign: 'center' }}>MARK DONE</div>
+          {!isCompleted && <div style={{ textAlign: 'center' }}>MARK DONE</div>}
           <div></div>
         </div>
 
         {/* Table Rows */}
-        {sortedHabits.map((habit) => {
+        {habitsToRender.map((habit) => {
           const progress = Math.min((habit.currentStreak / habit.durationDays) * 100, 100);
 
           return (
-          <div
-            key={habit.id}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr 1.5fr 1.5fr 80px',
-              gap: '16px',
-              padding: '20px 24px',
-              borderBottom: '1px solid #f0f0f0',
-              alignItems: 'center',
-              transition: 'background 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#fafafa'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-          >
-            {/* Habit Name with Icon */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                fontSize: '24px',
-                flexShrink: 0
-              }}>
-                {habit.icon || '🎯'}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ fontWeight: '600', color: '#333' }}>
-                  {habit.name}
+            <div
+              key={habit.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: isCompleted ? '2fr 1.5fr 1.5fr 1fr 1.5fr 80px' : '2fr 1.5fr 1.5fr 1fr 1.5fr 1.5fr 80px',
+                gap: '16px',
+                padding: '20px 24px',
+                borderBottom: '1px solid #f0f0f0',
+                alignItems: 'center',
+                transition: 'background 0.2s',
+                background: isCompleted ? '#fafffe' : 'white'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = isCompleted ? '#f0f7f0' : '#fafafa'}
+              onMouseLeave={(e) => e.currentTarget.style.background = isCompleted ? '#fafffe' : 'white'}
+            >
+              {/* Habit Name with Icon */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  fontSize: '24px',
+                  flexShrink: 0,
+                  lineHeight: 1,
+                  display: 'flex',
+                  alignItems: 'center'
+                }}>
+                  {habit.icon || '🎯'}
                 </div>
-                {habit.description && (
-                  <div
-                    className="habit-info-wrapper"
-                    style={{ position: 'relative', display: 'inline-block' }}
-                    onMouseEnter={(e) => {
-                      const tooltip = e.currentTarget.querySelector('.habit-tooltip');
-                      if (tooltip) tooltip.style.opacity = '1';
-                    }}
-                    onMouseLeave={(e) => {
-                      const tooltip = e.currentTarget.querySelector('.habit-tooltip');
-                      if (tooltip) tooltip.style.opacity = '0';
-                    }}
-                  >
-                    <Info
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  flex: 1
+                }}>
+                  <span style={{
+                    fontWeight: '600',
+                    color: '#333'
+                  }}>
+                    {habit.name}
+                  </span>
+                  {isCompleted && (
+                    <Trophy
                       size={18}
+                      color="#FFD700"
+                      style={{ flexShrink: 0, display: 'block' }}
+                    />
+                  )}
+                  {habit.description && (
+                    <div
+                      className="habit-info-wrapper"
                       style={{
-                        color: '#ff6b35',
-                        cursor: 'pointer',
+                        position: 'relative',
+                        display: 'inline-flex',
+                        alignItems: 'center',
                         flexShrink: 0
                       }}
-                    />
-                    <div
-                      className="habit-tooltip"
-                      style={{
-                        position: 'absolute',
-                        bottom: '100%',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        marginBottom: '8px',
-                        padding: '10px 14px',
-                        background: '#333',
-                        color: 'white',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        maxWidth: '400px',
-                        minWidth: '200px',
-                        whiteSpace: 'normal',
-                        wordWrap: 'break-word',
-                        lineHeight: '1.5',
-                        opacity: 0,
-                        pointerEvents: 'none',
-                        transition: 'opacity 0.2s',
-                        zIndex: 1000,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                      onMouseEnter={(e) => {
+                        const tooltip = e.currentTarget.querySelector('.habit-tooltip');
+                        if (tooltip) tooltip.style.opacity = '1';
+                      }}
+                      onMouseLeave={(e) => {
+                        const tooltip = e.currentTarget.querySelector('.habit-tooltip');
+                        if (tooltip) tooltip.style.opacity = '0';
                       }}
                     >
-                      {habit.description}
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        width: 0,
-                        height: 0,
-                        borderLeft: '6px solid transparent',
-                        borderRight: '6px solid transparent',
-                        borderTop: '6px solid #333'
-                      }} />
+                      <Info
+                        size={18}
+                        style={{
+                          color: '#ff6b35',
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                          display: 'block'
+                        }}
+                      />
+                      <div className="habit-tooltip" style={{
+                        position: 'absolute', bottom: '100%', left: '50%',
+                        transform: 'translateX(-50%)', marginBottom: '8px',
+                        padding: '10px 14px', background: '#333', color: 'white',
+                        borderRadius: '8px', fontSize: '13px', maxWidth: '400px',
+                        minWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word',
+                        lineHeight: '1.5', opacity: 0, pointerEvents: 'none',
+                        transition: 'opacity 0.2s', zIndex: 10000,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                      }}>
+                        {habit.description}
+                        <div style={{
+                          position: 'absolute', top: '100%', left: '50%',
+                          transform: 'translateX(-50%)', width: 0, height: 0,
+                          borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
+                          borderTop: '6px solid #333'
+                        }} />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Category */}
-            <div style={{ color: '#666', fontSize: '14px' }}>
-              {getCategoryName(habit.categoryId)}
-            </div>
-
-            {/* Subcategory */}
-            <div style={{ color: '#666', fontSize: '14px' }}>
-              {getSubcategoryName(habit.subcategoryId)}
-            </div>
-
-            {/* Streak */}
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                background: habit.currentStreak > 0 ? '#fff5eb' : '#f8f8f8',
-                borderRadius: '20px',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: habit.currentStreak > 0 ? '#ff6b35' : '#999'
-              }}>
-                {habit.currentStreak > 0 && <Flame size={16} />}
-                {habit.currentStreak} {habit.currentStreak === 1 ? 'day' : 'days'}
+              {/* Category */}
+              <div style={{ color: '#666', fontSize: '14px' }}>
+                {getCategoryName(habit.categoryId)}
               </div>
-            </div>
 
-            {/* Progress Bar */}
-            <div style={{ textAlign: 'center', position: 'relative' }}>
-              <div
-                style={{
-                  position: 'relative',
+              {/* Subcategory */}
+              <div style={{ color: '#666', fontSize: '14px' }}>
+                {getSubcategoryName(habit.subcategoryId)}
+              </div>
 
-                  width: '100%',
-                  height: '24px',
-                  background: '#f0f0f0',
-                  borderRadius: '14px',
-                  overflow: 'hidden',
-                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
-                  cursor: 'pointer'
+              {/* Streak */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  padding: '6px 12px',
+                  background: isCompleted ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)' :
+                             habit.currentStreak > 0 ? '#fff5eb' : '#f8f8f8',
+                  borderRadius: '20px', fontSize: '14px', fontWeight: '600',
+                  color: isCompleted ? 'white' : habit.currentStreak > 0 ? '#ff6b35' : '#999'
+                }}>
+                  {isCompleted ? <Star size={16} /> : habit.currentStreak > 0 && <Flame size={16} />}
+                  {habit.currentStreak} {habit.currentStreak === 1 ? 'day' : 'days'}
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div style={{ textAlign: 'center', position: 'relative' }}>
+                <div style={{
+                  position: 'relative', width: '100%', height: '24px',
+                  background: '#f0f0f0', borderRadius: '14px', overflow: 'hidden',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)', cursor: 'pointer'
                 }}
                 onMouseEnter={(e) => {
                   const tooltip = e.currentTarget.nextElementSibling;
@@ -917,224 +966,172 @@ const Habits = () => {
                 onMouseLeave={(e) => {
                   const tooltip = e.currentTarget.nextElementSibling;
                   if (tooltip) tooltip.style.opacity = '0';
-                }}
-              >
-                {/* Progress fill */}
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  height: '100%',
-                  width: `${progress}%`,
-                  background: progress === 100
-                    ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'
-                    : 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
-                  transition: 'width 0.3s ease',
-                  borderRadius: '14px'
-                }} />
-                {/* Progress text */}
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  color: progress > 50 ? 'white' : '#333',
-                  textShadow: progress > 50 ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
-                  zIndex: 1
                 }}>
-                  {progress.toFixed(0)}%
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, height: '100%',
+                    width: `${progress}%`,
+                    background: progress === 100 || isCompleted
+                      ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'
+                      : 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                    transition: 'width 0.3s ease', borderRadius: '14px'
+                  }} />
+                  <div style={{
+                    position: 'absolute', top: '50%', left: '50%',
+                    transform: 'translate(-50%, -50%)', fontSize: '13px',
+                    fontWeight: '700',
+                    color: progress > 50 ? 'white' : '#333',
+                    textShadow: progress > 50 ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
+                    zIndex: 1
+                  }}>
+                    {progress.toFixed(0)}%
+                  </div>
+                </div>
+                <div style={{
+                  position: 'absolute', bottom: '100%', left: '50%',
+                  transform: 'translateX(-50%)', marginBottom: '8px',
+                  padding: '8px 12px', background: '#333', color: 'white',
+                  borderRadius: '8px', fontSize: '13px', whiteSpace: 'nowrap',
+                  opacity: 0, pointerEvents: 'none', transition: 'opacity 0.2s',
+                  zIndex: 10000, boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                }}>
+                  {habit.currentStreak}/{habit.durationDays} days completed
+                  {isCompleted && ' ✓'}
+                  <div style={{
+                    position: 'absolute', top: '100%', left: '50%',
+                    transform: 'translateX(-50%)', width: 0, height: 0,
+                    borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
+                    borderTop: '6px solid #333'
+                  }} />
                 </div>
               </div>
-              {/* Custom Tooltip */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '100%',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  marginBottom: '8px',
-                  padding: '8px 12px',
-                  background: '#333',
-                  color: 'white',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  whiteSpace: 'nowrap',
-                  opacity: 0,
-                  pointerEvents: 'none',
-                  transition: 'opacity 0.2s',
-                  zIndex: 1000,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                }}
-              >
-                {habit.currentStreak}/{habit.durationDays} days completed
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 0,
-                  height: 0,
-                  borderLeft: '6px solid transparent',
-                  borderRight: '6px solid transparent',
-                  borderTop: '6px solid #333'
-                }} />
-              </div>
-            </div>
 
-            {/* Mark Done Button */}
-            <div style={{ textAlign: 'center' }}>
-              <button
-                onClick={() => handleMarkDone(habit.id)}
-                disabled={markedDoneToday.has(habit.id)}
-                style={{
-                  padding: '10px 20px',
-                  background: markedDoneToday.has(habit.id) ?
-                    '#e0e0e0' :
-                    'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
-                  color: markedDoneToday.has(habit.id) ? '#999' : 'white',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: markedDoneToday.has(habit.id) ? 'not-allowed' : 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: markedDoneToday.has(habit.id) ?
-                    'none' :
-                    '0 4px 12px rgba(76, 175, 80, 0.3)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  opacity: markedDoneToday.has(habit.id) ? 0.6 : 1
-                }}
-                onMouseEnter={(e) => {
-                  if (!markedDoneToday.has(habit.id)) {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(76, 175, 80, 0.4)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!markedDoneToday.has(habit.id)) {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(76, 175, 80, 0.3)';
-                  }
-                }}
-              >
-                <CheckCircle size={16} />
-                {markedDoneToday.has(habit.id) ? 'Done!' : 'Mark Done'}
-              </button>
-            </div>
-
-            {/* Three-dot menu */}
-            <div style={{ position: 'relative', textAlign: 'center' }}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenDropdown(openDropdown === `habit-${habit.id}` ? null : `habit-${habit.id}`);
-                }}
-                style={{
-                  padding: '6px',
-                  background: 'transparent',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#666',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#f0f0f0';
-                  e.currentTarget.style.color = '#333';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = '#666';
-                }}
-              >
-                <MoreVertical size={20} />
-              </button>
-
-              {/* Dropdown menu */}
-              {openDropdown === `habit-${habit.id}` && (
-                <div
-                  ref={dropdownRef}
-                  style={{
-                    position: 'absolute',
-                    top: '36px',
-                    right: '0',
-                    background: 'white',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                    overflow: 'hidden',
-                    minWidth: '140px',
-                    zIndex: 100
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
+              {/* Mark Done Button (only for in-progress habits) */}
+              {!isCompleted && (
+                <div style={{ textAlign: 'center' }}>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEditHabitModal(habit);
-                      setOpenDropdown(null);
-                    }}
+                    onClick={() => handleMarkDone(habit.id)}
+                    disabled={markedDoneToday.has(habit.id)}
                     style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      background: 'white',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#333',
-                      transition: 'background 0.2s'
+                      padding: '10px 20px',
+                      background: markedDoneToday.has(habit.id) ?
+                        '#e0e0e0' :
+                        'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                      color: markedDoneToday.has(habit.id) ? '#999' : 'white',
+                      border: 'none', borderRadius: '10px', fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: markedDoneToday.has(habit.id) ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex', alignItems: 'center', gap: '6px',
+                      boxShadow: markedDoneToday.has(habit.id) ?
+                        'none' : '0 4px 12px rgba(76, 175, 80, 0.3)',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      opacity: markedDoneToday.has(habit.id) ? 0.6 : 1
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#f8f8f8'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                    onMouseEnter={(e) => {
+                      if (!markedDoneToday.has(habit.id)) {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(76, 175, 80, 0.4)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!markedDoneToday.has(habit.id)) {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(76, 175, 80, 0.3)';
+                      }
+                    }}
                   >
-                    <Edit2 size={16} color="#4CAF50" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteHabit(habit.id);
-                      setOpenDropdown(null);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      background: 'white',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#333',
-                      transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#f8f8f8'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                  >
-                    <Trash2 size={16} color="#dc3545" />
-                    Delete
+                    <CheckCircle size={16} />
+                    {markedDoneToday.has(habit.id) ? 'Done!' : 'Mark Done'}
                   </button>
                 </div>
               )}
+
+              {/* Three-dot menu */}
+              <div style={{ position: 'relative', textAlign: 'center' }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenDropdown(openDropdown === `habit-${habit.id}` ? null : `habit-${habit.id}`);
+                  }}
+                  style={{
+                    padding: '6px', background: 'transparent', border: 'none',
+                    borderRadius: '8px', color: '#666', cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center',
+                    justifyContent: 'center', transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f0f0f0';
+                    e.currentTarget.style.color = '#333';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = '#666';
+                  }}
+                >
+                  <MoreVertical size={20} />
+                </button>
+
+                {/* Dropdown menu */}
+                {openDropdown === `habit-${habit.id}` && (
+                  <div
+                    ref={dropdownRef}
+                    style={{
+                      position: 'absolute', top: '36px', right: '0',
+                      background: 'white', borderRadius: '12px',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                      minWidth: '140px', zIndex: 1000
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {!isCompleted && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditHabitModal(habit);
+                          setOpenDropdown(null);
+                        }}
+                        style={{
+                          width: '100%', padding: '12px 16px',
+                          background: 'white', border: 'none', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: '10px',
+                          fontSize: '14px', fontWeight: '500', color: '#333',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8f8f8'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                      >
+                        <Edit2 size={16} color="#4CAF50" />
+                        Edit
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteHabit(habit.id);
+                        setOpenDropdown(null);
+                      }}
+                      style={{
+                        width: '100%', padding: '12px 16px',
+                        background: 'white', border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        fontSize: '14px', fontWeight: '500', color: '#333',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8f8f8'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                    >
+                      <Trash2 size={16} color="#dc3545" />
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        );
+          );
         })}
       </div>
     );
   };
+
 
   // Render category card
   const renderCategoryCard = (category) => (
@@ -1164,27 +1161,16 @@ const Habits = () => {
         e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
       }}
     >
-      {/* Three-dot menu */}
-      <div style={{
-        position: 'absolute',
-        top: '12px',
-        right: '12px'
-      }}>
+      <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
         <button
           onClick={(e) => {
             e.stopPropagation();
             setOpenDropdown(openDropdown === `category-${category.id}` ? null : `category-${category.id}`);
           }}
           style={{
-            padding: '6px',
-            background: 'transparent',
-            border: 'none',
-            borderRadius: '8px',
-            color: '#666',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            padding: '6px', background: 'transparent', border: 'none',
+            borderRadius: '8px', color: '#666', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.2s'
           }}
           onMouseEnter={(e) => {
@@ -1199,20 +1185,14 @@ const Habits = () => {
           <MoreVertical size={20} />
         </button>
 
-        {/* Dropdown menu */}
         {openDropdown === `category-${category.id}` && (
           <div
             ref={dropdownRef}
             style={{
-              position: 'absolute',
-              top: '36px',
-              right: '0',
-              background: 'white',
-              borderRadius: '12px',
+              position: 'absolute', top: '36px', right: '0',
+              background: 'white', borderRadius: '12px',
               boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-              overflow: 'hidden',
-              minWidth: '140px',
-              zIndex: 100
+              minWidth: '140px', zIndex: 1000
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1223,17 +1203,10 @@ const Habits = () => {
                 setOpenDropdown(null);
               }}
               style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: 'white',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#333',
+                width: '100%', padding: '12px 16px',
+                background: 'white', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '10px',
+                fontSize: '14px', fontWeight: '500', color: '#333',
                 transition: 'background 0.2s'
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = '#f8f8f8'}
@@ -1249,17 +1222,10 @@ const Habits = () => {
                 setOpenDropdown(null);
               }}
               style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: 'white',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#333',
+                width: '100%', padding: '12px 16px',
+                background: 'white', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '10px',
+                fontSize: '14px', fontWeight: '500', color: '#333',
                 transition: 'background 0.2s'
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = '#f8f8f8'}
@@ -1272,19 +1238,13 @@ const Habits = () => {
         )}
       </div>
 
-      <div style={{
-        fontSize: '64px',
-        marginTop: '20px'
-      }}>
+      <div style={{ fontSize: '64px', marginTop: '20px' }}>
         {category.icon || '📁'}
       </div>
 
       <h3 style={{
-        margin: 0,
-        fontSize: '20px',
-        fontWeight: 'bold',
-        color: '#333',
-        textAlign: 'center'
+        margin: 0, fontSize: '20px', fontWeight: 'bold',
+        color: '#333', textAlign: 'center'
       }}>
         {category.name}
       </h3>
@@ -1319,27 +1279,16 @@ const Habits = () => {
         e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
       }}
     >
-      {/* Three-dot menu */}
-      <div style={{
-        position: 'absolute',
-        top: '12px',
-        right: '12px'
-      }}>
+      <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
         <button
           onClick={(e) => {
             e.stopPropagation();
             setOpenDropdown(openDropdown === `subcategory-${subcategory.id}` ? null : `subcategory-${subcategory.id}`);
           }}
           style={{
-            padding: '6px',
-            background: 'transparent',
-            border: 'none',
-            borderRadius: '8px',
-            color: '#666',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            padding: '6px', background: 'transparent', border: 'none',
+            borderRadius: '8px', color: '#666', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.2s'
           }}
           onMouseEnter={(e) => {
@@ -1354,20 +1303,14 @@ const Habits = () => {
           <MoreVertical size={20} />
         </button>
 
-        {/* Dropdown menu */}
         {openDropdown === `subcategory-${subcategory.id}` && (
           <div
             ref={dropdownRef}
             style={{
-              position: 'absolute',
-              top: '36px',
-              right: '0',
-              background: 'white',
-              borderRadius: '12px',
+              position: 'absolute', top: '36px', right: '0',
+              background: 'white', borderRadius: '12px',
               boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-              overflow: 'hidden',
-              minWidth: '140px',
-              zIndex: 100
+              minWidth: '140px', zIndex: 1000
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1378,17 +1321,10 @@ const Habits = () => {
                 setOpenDropdown(null);
               }}
               style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: 'white',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#333',
+                width: '100%', padding: '12px 16px',
+                background: 'white', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '10px',
+                fontSize: '14px', fontWeight: '500', color: '#333',
                 transition: 'background 0.2s'
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = '#f8f8f8'}
@@ -1404,17 +1340,10 @@ const Habits = () => {
                 setOpenDropdown(null);
               }}
               style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: 'white',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#333',
+                width: '100%', padding: '12px 16px',
+                background: 'white', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '10px',
+                fontSize: '14px', fontWeight: '500', color: '#333',
                 transition: 'background 0.2s'
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = '#f8f8f8'}
@@ -1427,19 +1356,13 @@ const Habits = () => {
         )}
       </div>
 
-      <div style={{
-        fontSize: '64px',
-        marginTop: '20px'
-      }}>
+      <div style={{ fontSize: '64px', marginTop: '20px' }}>
         {subcategory.icon || '📂'}
       </div>
 
       <h3 style={{
-        margin: 0,
-        fontSize: '20px',
-        fontWeight: 'bold',
-        color: '#333',
-        textAlign: 'center'
+        margin: 0, fontSize: '20px', fontWeight: 'bold',
+        color: '#333', textAlign: 'center'
       }}>
         {subcategory.name}
       </h3>
@@ -1466,45 +1389,26 @@ const Habits = () => {
     return (
       <div
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          zIndex: 10000, padding: '20px'
         }}
         onClick={(e) => e.target === e.currentTarget && handleClose()}
       >
         <div style={{
-          background: 'white',
-          borderRadius: '16px',
-          padding: '32px',
-          maxWidth: '600px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflow: 'auto',
-          position: 'relative'
+          background: 'white', borderRadius: '16px', padding: '32px',
+          maxWidth: '600px', width: '100%', maxHeight: '90vh',
+          overflow: 'auto', position: 'relative'
         }}
         onClick={(e) => e.stopPropagation()}>
           <button
             onClick={handleClose}
             style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '50%',
+              position: 'absolute', top: '16px', right: '16px',
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '8px', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', borderRadius: '50%',
               transition: 'background 0.2s'
             }}
             onMouseEnter={(e) => e.currentTarget.style.background = '#f0f0f0'}
@@ -1527,13 +1431,9 @@ const Habits = () => {
               onChange={(e) => setCurrent({ ...current, name: e.target.value })}
               placeholder="e.g. Go to the gym, Meditate, Read"
               style={{
-                width: '100%',
-                padding: '12px 16px',
-                fontSize: '16px',
-                borderRadius: '12px',
-                border: '2px solid #e0e0e0',
-                outline: 'none',
-                transition: 'border-color 0.2s',
+                width: '100%', padding: '12px 16px', fontSize: '16px',
+                borderRadius: '12px', border: '2px solid #e0e0e0',
+                outline: 'none', transition: 'border-color 0.2s',
                 boxSizing: 'border-box'
               }}
               onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
@@ -1551,15 +1451,10 @@ const Habits = () => {
               placeholder="Optional description..."
               rows={3}
               style={{
-                width: '100%',
-                padding: '12px 16px',
-                fontSize: '16px',
-                borderRadius: '12px',
-                border: '2px solid #e0e0e0',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-                resize: 'vertical',
-                fontFamily: 'inherit',
+                width: '100%', padding: '12px 16px', fontSize: '16px',
+                borderRadius: '12px', border: '2px solid #e0e0e0',
+                outline: 'none', transition: 'border-color 0.2s',
+                resize: 'vertical', fontFamily: 'inherit',
                 boxSizing: 'border-box'
               }}
               onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
@@ -1579,15 +1474,10 @@ const Habits = () => {
                   setCurrent({ ...current, categoryId: catId, subcategoryId: null });
                 }}
                 style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  fontSize: '16px',
-                  borderRadius: '12px',
-                  border: '2px solid #e0e0e0',
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                  backgroundColor: 'white',
-                  boxSizing: 'border-box'
+                  width: '100%', padding: '12px 16px', fontSize: '16px',
+                  borderRadius: '12px', border: '2px solid #e0e0e0',
+                  outline: 'none', transition: 'border-color 0.2s',
+                  backgroundColor: 'white', boxSizing: 'border-box'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
                 onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
@@ -1601,16 +1491,10 @@ const Habits = () => {
               </select>
               {categoriesWithSubcategories.length === 0 && (
                 <div style={{
-                  fontSize: '13px',
-                  color: '#ff6b35',
-                  marginTop: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 12px',
-                  background: '#fff5eb',
-                  borderRadius: '8px',
-                  border: '1px solid #ffd6b8'
+                  fontSize: '13px', color: '#ff6b35', marginTop: '6px',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '8px 12px', background: '#fff5eb',
+                  borderRadius: '8px', border: '1px solid #ffd6b8'
                 }}>
                   <span style={{ fontSize: '16px' }}>⚠️</span>
                   <span>
@@ -1622,15 +1506,10 @@ const Habits = () => {
                         setCurrentView('categories');
                       }}
                       style={{
-                        marginLeft: '4px',
-                        color: '#ff6b35',
-                        textDecoration: 'underline',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        padding: 0
+                        marginLeft: '4px', color: '#ff6b35',
+                        textDecoration: 'underline', background: 'none',
+                        border: 'none', cursor: 'pointer',
+                        fontSize: '13px', fontWeight: '600', padding: 0
                       }}
                     >
                       Set up now →
@@ -1652,13 +1531,9 @@ const Habits = () => {
                 }}
                 disabled={!current.categoryId || availableSubcategories.length === 0}
                 style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  fontSize: '16px',
-                  borderRadius: '12px',
-                  border: '2px solid #e0e0e0',
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
+                  width: '100%', padding: '12px 16px', fontSize: '16px',
+                  borderRadius: '12px', border: '2px solid #e0e0e0',
+                  outline: 'none', transition: 'border-color 0.2s',
                   backgroundColor: 'white',
                   opacity: !current.categoryId || availableSubcategories.length === 0 ? 0.5 : 1,
                   cursor: !current.categoryId || availableSubcategories.length === 0 ? 'not-allowed' : 'pointer',
@@ -1681,16 +1556,10 @@ const Habits = () => {
               )}
               {current.categoryId && availableSubcategories.length === 0 && (
                 <div style={{
-                  fontSize: '13px',
-                  color: '#ff6b35',
-                  marginTop: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 12px',
-                  background: '#fff5eb',
-                  borderRadius: '8px',
-                  border: '1px solid #ffd6b8'
+                  fontSize: '13px', color: '#ff6b35', marginTop: '6px',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '8px 12px', background: '#fff5eb',
+                  borderRadius: '8px', border: '1px solid #ffd6b8'
                 }}>
                   <span style={{ fontSize: '16px' }}>⚠️</span>
                   <span>
@@ -1702,15 +1571,10 @@ const Habits = () => {
                         setCurrentView('categories');
                       }}
                       style={{
-                        marginLeft: '4px',
-                        color: '#ff6b35',
-                        textDecoration: 'underline',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        padding: 0
+                        marginLeft: '4px', color: '#ff6b35',
+                        textDecoration: 'underline', background: 'none',
+                        border: 'none', cursor: 'pointer',
+                        fontSize: '13px', fontWeight: '600', padding: 0
                       }}
                     >
                       add subcategories →
@@ -1732,13 +1596,9 @@ const Habits = () => {
               min="1"
               max="365"
               style={{
-                width: '100%',
-                padding: '12px 16px',
-                fontSize: '16px',
-                borderRadius: '12px',
-                border: '2px solid #e0e0e0',
-                outline: 'none',
-                transition: 'border-color 0.2s',
+                width: '100%', padding: '12px 16px', fontSize: '16px',
+                borderRadius: '12px', border: '2px solid #e0e0e0',
+                outline: 'none', transition: 'border-color 0.2s',
                 boxSizing: 'border-box'
               }}
               onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
@@ -1752,16 +1612,10 @@ const Habits = () => {
             </label>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <div style={{
-                width: '60px',
-                height: '60px',
-                borderRadius: '12px',
-                border: '2px solid #e0e0e0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '36px',
-                background: '#f8f8f8',
-                flexShrink: 0
+                width: '60px', height: '60px', borderRadius: '12px',
+                border: '2px solid #e0e0e0', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                fontSize: '36px', background: '#f8f8f8', flexShrink: 0
               }}>
                 {current.icon}
               </div>
@@ -1769,20 +1623,15 @@ const Habits = () => {
                 type="button"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                 style={{
-                  flex: 1,
-                  padding: '12px 16px',
+                  flex: 1, padding: '12px 16px',
                   background: showEmojiPicker ? '#fff5eb' : '#f8f8f8',
                   border: `2px solid ${showEmojiPicker ? '#ff6b35' : '#e0e0e0'}`,
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
+                  borderRadius: '12px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', gap: '8px',
                   fontWeight: '600',
                   color: showEmojiPicker ? '#ff6b35' : '#666',
-                  fontSize: '16px',
-                  transition: 'all 0.2s'
+                  fontSize: '16px', transition: 'all 0.2s'
                 }}
                 onMouseEnter={(e) => {
                   if (!showEmojiPicker) {
@@ -1805,10 +1654,8 @@ const Habits = () => {
 
           {showEmojiPicker && (
             <div style={{
-              marginBottom: '24px',
-              border: '2px solid #ff6b35',
-              borderRadius: '12px',
-              overflow: 'hidden',
+              marginBottom: '24px', border: '2px solid #ff6b35',
+              borderRadius: '12px', overflow: 'hidden',
               boxShadow: '0 4px 12px rgba(255, 107, 53, 0.2)'
             }}>
               <EmojiPicker
@@ -1825,16 +1672,10 @@ const Habits = () => {
             <button
               onClick={handleClose}
               style={{
-                flex: 1,
-                padding: '14px',
-                background: '#f0f0f0',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                color: '#666',
-                cursor: 'pointer',
-                transition: 'background 0.2s'
+                flex: 1, padding: '14px', background: '#f0f0f0',
+                border: 'none', borderRadius: '12px',
+                fontSize: '16px', fontWeight: 'bold', color: '#666',
+                cursor: 'pointer', transition: 'background 0.2s'
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = '#e0e0e0'}
               onMouseLeave={(e) => e.currentTarget.style.background = '#f0f0f0'}
@@ -1845,17 +1686,14 @@ const Habits = () => {
               onClick={isEdit ? handleEditHabit : handleCreateHabit}
               disabled={!current.name.trim() || !current.categoryId || !current.subcategoryId}
               style={{
-                flex: 1,
-                padding: '14px',
+                flex: 1, padding: '14px',
                 background: (!current.name.trim() || !current.categoryId || !current.subcategoryId) ?
                   '#e0e0e0' :
                   isEdit ?
                     'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)' :
                     'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '16px',
-                fontWeight: 'bold',
+                border: 'none', borderRadius: '12px',
+                fontSize: '16px', fontWeight: 'bold',
                 color: (!current.name.trim() || !current.categoryId || !current.subcategoryId) ? '#999' : 'white',
                 cursor: (!current.name.trim() || !current.categoryId || !current.subcategoryId) ? 'not-allowed' : 'pointer',
                 boxShadow: (!current.name.trim() || !current.categoryId || !current.subcategoryId) ?
@@ -1925,45 +1763,26 @@ const Habits = () => {
     return (
       <div
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          zIndex: 10000, padding: '20px'
         }}
         onClick={(e) => e.target === e.currentTarget && handleClose()}
       >
         <div style={{
-          background: 'white',
-          borderRadius: '16px',
-          padding: '32px',
-          maxWidth: '500px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflow: 'auto',
-          position: 'relative'
+          background: 'white', borderRadius: '16px', padding: '32px',
+          maxWidth: '500px', width: '100%', maxHeight: '90vh',
+          overflow: 'auto', position: 'relative'
         }}
         onClick={(e) => e.stopPropagation()}>
           <button
             onClick={handleClose}
             style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '50%',
+              position: 'absolute', top: '16px', right: '16px',
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '8px', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', borderRadius: '50%',
               transition: 'background 0.2s'
             }}
             onMouseEnter={(e) => e.currentTarget.style.background = '#f0f0f0'}
@@ -1986,13 +1805,9 @@ const Habits = () => {
               onChange={(e) => setCurrent({ ...current, name: e.target.value })}
               placeholder={isCategory ? 'e.g. Health, Productivity' : 'e.g. Gym, Meditation'}
               style={{
-                width: '100%',
-                padding: '12px 16px',
-                fontSize: '16px',
-                borderRadius: '12px',
-                border: '2px solid #e0e0e0',
-                outline: 'none',
-                transition: 'border-color 0.2s',
+                width: '100%', padding: '12px 16px', fontSize: '16px',
+                borderRadius: '12px', border: '2px solid #e0e0e0',
+                outline: 'none', transition: 'border-color 0.2s',
                 boxSizing: 'border-box'
               }}
               onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
@@ -2006,16 +1821,10 @@ const Habits = () => {
             </label>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <div style={{
-                width: '60px',
-                height: '60px',
-                borderRadius: '12px',
-                border: '2px solid #e0e0e0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '36px',
-                background: '#f8f8f8',
-                flexShrink: 0
+                width: '60px', height: '60px', borderRadius: '12px',
+                border: '2px solid #e0e0e0', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                fontSize: '36px', background: '#f8f8f8', flexShrink: 0
               }}>
                 {current.icon}
               </div>
@@ -2023,20 +1832,15 @@ const Habits = () => {
                 type="button"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                 style={{
-                  flex: 1,
-                  padding: '12px 16px',
+                  flex: 1, padding: '12px 16px',
                   background: showEmojiPicker ? '#fff5eb' : '#f8f8f8',
                   border: `2px solid ${showEmojiPicker ? '#ff6b35' : '#e0e0e0'}`,
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
+                  borderRadius: '12px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', gap: '8px',
                   fontWeight: '600',
                   color: showEmojiPicker ? '#ff6b35' : '#666',
-                  fontSize: '16px',
-                  transition: 'all 0.2s'
+                  fontSize: '16px', transition: 'all 0.2s'
                 }}
                 onMouseEnter={(e) => {
                   if (!showEmojiPicker) {
@@ -2059,10 +1863,8 @@ const Habits = () => {
 
           {showEmojiPicker && (
             <div style={{
-              marginBottom: '24px',
-              border: '2px solid #ff6b35',
-              borderRadius: '12px',
-              overflow: 'hidden',
+              marginBottom: '24px', border: '2px solid #ff6b35',
+              borderRadius: '12px', overflow: 'hidden',
               boxShadow: '0 4px 12px rgba(255, 107, 53, 0.2)'
             }}>
               <EmojiPicker
@@ -2079,16 +1881,10 @@ const Habits = () => {
             <button
               onClick={handleClose}
               style={{
-                flex: 1,
-                padding: '14px',
-                background: '#f0f0f0',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                color: '#666',
-                cursor: 'pointer',
-                transition: 'background 0.2s'
+                flex: 1, padding: '14px', background: '#f0f0f0',
+                border: 'none', borderRadius: '12px',
+                fontSize: '16px', fontWeight: 'bold', color: '#666',
+                cursor: 'pointer', transition: 'background 0.2s'
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = '#e0e0e0'}
               onMouseLeave={(e) => e.currentTarget.style.background = '#f0f0f0'}
@@ -2098,16 +1894,12 @@ const Habits = () => {
             <button
               onClick={handleSubmit}
               style={{
-                flex: 1,
-                padding: '14px',
+                flex: 1, padding: '14px',
                 background: isEdit ?
                   'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)' :
                   'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                color: 'white',
+                border: 'none', borderRadius: '12px',
+                fontSize: '16px', fontWeight: 'bold', color: 'white',
                 cursor: 'pointer',
                 boxShadow: isEdit ?
                   '0 4px 12px rgba(76, 175, 80, 0.3)' :
@@ -2137,6 +1929,20 @@ const Habits = () => {
 
   return (
     <div style={{ padding: '80px 40px', maxWidth: '1400px', margin: '0 auto' }}>
+      {/* CSS Animation */}
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -2144,16 +1950,11 @@ const Habits = () => {
             <button
               onClick={navigateBack}
               style={{
-                padding: '10px',
-                background: 'white',
-                border: '2px solid #ff6b35',
-                borderRadius: '10px',
-                color: '#ff6b35',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s'
+                padding: '10px', background: 'white',
+                border: '2px solid #ff6b35', borderRadius: '10px',
+                color: '#ff6b35', cursor: 'pointer',
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center', transition: 'all 0.2s'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = '#ff6b35';
@@ -2184,17 +1985,11 @@ const Habits = () => {
                 <button
                   onClick={() => setShowHabitModal(true)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
+                    display: 'flex', alignItems: 'center', gap: '8px',
                     padding: '12px 24px',
                     background: 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
+                    color: 'white', border: 'none', borderRadius: '12px',
+                    fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
                     boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)',
                     transition: 'transform 0.2s, box-shadow 0.2s'
                   }}
@@ -2212,16 +2007,10 @@ const Habits = () => {
                 </button>
               ) : (
                 <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '12px 20px',
-                  background: '#fff5eb',
-                  color: '#ff6b35',
-                  border: '2px solid #ffd6b8',
-                  borderRadius: '12px',
-                  fontSize: '14px',
-                  fontWeight: '600'
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '12px 20px', background: '#fff5eb',
+                  color: '#ff6b35', border: '2px solid #ffd6b8',
+                  borderRadius: '12px', fontSize: '14px', fontWeight: '600'
                 }}>
                   <span style={{ fontSize: '18px' }}>⚠️</span>
                   Set up categories first
@@ -2230,17 +2019,11 @@ const Habits = () => {
               <button
                 onClick={() => setCurrentView('categories')}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '12px 24px',
-                  background: 'white',
-                  color: '#ff6b35',
-                  border: '2px solid #ff6b35',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '12px 24px', background: 'white',
+                  color: '#ff6b35', border: '2px solid #ff6b35',
+                  borderRadius: '12px', fontSize: '16px',
+                  fontWeight: 'bold', cursor: 'pointer',
                   transition: 'all 0.2s'
                 }}
                 onMouseEnter={(e) => {
@@ -2259,7 +2042,6 @@ const Habits = () => {
           {currentView === 'subcategoryHabits' && (
             <button
               onClick={() => {
-                // Pre-fill category and subcategory in modal
                 setNewHabit({
                   ...newHabit,
                   categoryId: selectedCategory.id,
@@ -2268,17 +2050,11 @@ const Habits = () => {
                 setShowHabitModal(true);
               }}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
+                display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '12px 24px',
                 background: 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
+                color: 'white', border: 'none', borderRadius: '12px',
+                fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
                 boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)',
                 transition: 'transform 0.2s, box-shadow 0.2s'
               }}
@@ -2300,17 +2076,11 @@ const Habits = () => {
             <button
               onClick={() => setShowCategoryModal(true)}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
+                display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '12px 24px',
                 background: 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
+                color: 'white', border: 'none', borderRadius: '12px',
+                fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
                 boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)',
                 transition: 'transform 0.2s, box-shadow 0.2s'
               }}
@@ -2332,17 +2102,11 @@ const Habits = () => {
             <button
               onClick={() => setShowSubcategoryModal(true)}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
+                display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '12px 24px',
                 background: 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
+                color: 'white', border: 'none', borderRadius: '12px',
+                fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
                 boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)',
                 transition: 'transform 0.2s, box-shadow 0.2s'
               }}
@@ -2378,7 +2142,68 @@ const Habits = () => {
               {habits.length === 0 ? (
                 renderEmptyState('habits')
               ) : (
-                renderHabitsTable()
+                <>
+                  {/* Celebration Modal */}
+                  {renderCelebrationModal()}
+
+                  {/* In Progress Habits */}
+                  {inProgressHabits.length > 0 && (
+                    <>
+                      <h2 style={{
+                        margin: '0 0 20px 0',
+                        color: '#333',
+                        fontSize: '24px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px'
+                      }}>
+                        <Target size={28} color="#ff6b35" />
+                        In Progress
+                        <span style={{
+                          background: '#ff6b35',
+                          color: 'white',
+                          padding: '4px 12px',
+                          borderRadius: '20px',
+                          fontSize: '16px',
+                          fontWeight: 'bold'
+                        }}>
+                          {inProgressHabits.length}
+                        </span>
+                      </h2>
+                      {renderHabitsTable(inProgressHabits, false)}
+                    </>
+                  )}
+
+                  {/* Completed Habits */}
+                  {completedHabits.length > 0 && (
+                    <>
+                      <h2 style={{
+                        margin: '32px 0 20px 0',
+                        color: '#333',
+                        fontSize: '24px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px'
+                      }}>
+                        <Trophy size={28} color="#FFD700" />
+                        Completed
+                        <span style={{
+                          background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+                          color: 'white',
+                          padding: '4px 12px',
+                          borderRadius: '20px',
+                          fontSize: '16px',
+                          fontWeight: 'bold'
+                        }}>
+                          {completedHabits.length}
+                        </span>
+                      </h2>
+                      {renderHabitsTable(completedHabits, true)}
+                    </>
+                  )}
+                </>
               )}
             </>
           )}
@@ -2481,7 +2306,6 @@ const Habits = () => {
                   );
                 }
 
-                // Render habits in a simplified list/card format
                 return (
                   <div style={{
                     display: 'grid',
@@ -2509,27 +2333,17 @@ const Habits = () => {
                         }}
                       >
                         {/* Three-dot menu */}
-                        <div style={{
-                          position: 'absolute',
-                          top: '12px',
-                          right: '12px'
-                        }}>
+                        <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               setOpenDropdown(openDropdown === `habit-card-${habit.id}` ? null : `habit-card-${habit.id}`);
                             }}
                             style={{
-                              padding: '6px',
-                              background: 'transparent',
-                              border: 'none',
-                              borderRadius: '8px',
-                              color: '#666',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              transition: 'all 0.2s'
+                              padding: '6px', background: 'transparent', border: 'none',
+                              borderRadius: '8px', color: '#666', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center',
+                              justifyContent: 'center', transition: 'all 0.2s'
                             }}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.background = '#f0f0f0';
@@ -2548,44 +2362,34 @@ const Habits = () => {
                             <div
                               ref={dropdownRef}
                               style={{
-                                position: 'absolute',
-                                top: '36px',
-                                right: '0',
-                                background: 'white',
-                                borderRadius: '12px',
+                                position: 'absolute', top: '36px', right: '0',
+                                background: 'white', borderRadius: '12px',
                                 boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                                overflow: 'hidden',
-                                minWidth: '140px',
-                                zIndex: 100
+                                minWidth: '140px', zIndex: 1000
                               }}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openEditHabitModal(habit);
-                                  setOpenDropdown(null);
-                                }}
-                                style={{
-                                  width: '100%',
-                                  padding: '12px 16px',
-                                  background: 'white',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '10px',
-                                  fontSize: '14px',
-                                  fontWeight: '500',
-                                  color: '#333',
-                                  transition: 'background 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = '#f8f8f8'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                              >
-                                <Edit2 size={16} color="#4CAF50" />
-                                Edit
-                              </button>
+                              {!habit.done && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditHabitModal(habit);
+                                    setOpenDropdown(null);
+                                  }}
+                                  style={{
+                                    width: '100%', padding: '12px 16px',
+                                    background: 'white', border: 'none', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '10px',
+                                    fontSize: '14px', fontWeight: '500', color: '#333',
+                                    transition: 'background 0.2s'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = '#f8f8f8'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                                >
+                                  <Edit2 size={16} color="#4CAF50" />
+                                  Edit
+                                </button>
+                              )}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -2593,17 +2397,10 @@ const Habits = () => {
                                   setOpenDropdown(null);
                                 }}
                                 style={{
-                                  width: '100%',
-                                  padding: '12px 16px',
-                                  background: 'white',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '10px',
-                                  fontSize: '14px',
-                                  fontWeight: '500',
-                                  color: '#333',
+                                  width: '100%', padding: '12px 16px',
+                                  background: 'white', border: 'none', cursor: 'pointer',
+                                  display: 'flex', alignItems: 'center', gap: '10px',
+                                  fontSize: '14px', fontWeight: '500', color: '#333',
                                   transition: 'background 0.2s'
                                 }}
                                 onMouseEnter={(e) => e.currentTarget.style.background = '#f8f8f8'}
@@ -2668,36 +2465,20 @@ const Habits = () => {
                                   <div
                                     className="habit-tooltip"
                                     style={{
-                                      position: 'absolute',
-                                      bottom: '100%',
-                                      left: '50%',
-                                      transform: 'translateX(-50%)',
-                                      marginBottom: '8px',
-                                      padding: '8px 12px',
-                                      background: '#333',
-                                      color: 'white',
-                                      borderRadius: '8px',
-                                      fontSize: '13px',
-                                      maxWidth: '250px',
-                                      whiteSpace: 'normal',
-                                      opacity: 0,
-                                      pointerEvents: 'none',
-                                      transition: 'opacity 0.2s',
-                                      zIndex: 1000,
-                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                      textAlign: 'left'
+                                      position: 'absolute', bottom: '100%', left: '50%',
+                                      transform: 'translateX(-50%)', marginBottom: '8px',
+                                      padding: '8px 12px', background: '#333', color: 'white',
+                                      borderRadius: '8px', fontSize: '13px', maxWidth: '250px',
+                                      whiteSpace: 'normal', opacity: 0, pointerEvents: 'none',
+                                      transition: 'opacity 0.2s', zIndex: 10000,
+                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)', textAlign: 'left'
                                     }}
                                   >
                                     {habit.description}
                                     <div style={{
-                                      position: 'absolute',
-                                      top: '100%',
-                                      left: '50%',
-                                      transform: 'translateX(-50%)',
-                                      width: 0,
-                                      height: 0,
-                                      borderLeft: '6px solid transparent',
-                                      borderRight: '6px solid transparent',
+                                      position: 'absolute', top: '100%', left: '50%',
+                                      transform: 'translateX(-50%)', width: 0, height: 0,
+                                      borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
                                       borderTop: '6px solid #333'
                                     }} />
                                   </div>
@@ -2723,47 +2504,71 @@ const Habits = () => {
                             </div>
 
                             {/* Mark done button */}
-                            <button
-                              onClick={() => handleMarkDone(habit.id)}
-                              disabled={markedDoneToday.has(habit.id)}
-                              style={{
+                            {!habit.done && (
+                              <button
+                                onClick={() => handleMarkDone(habit.id)}
+                                disabled={markedDoneToday.has(habit.id)}
+                                style={{
+                                  width: '100%',
+                                  padding: '12px 20px',
+                                  background: markedDoneToday.has(habit.id) ?
+                                    '#e0e0e0' :
+                                    'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                                  color: markedDoneToday.has(habit.id) ? '#999' : 'white',
+                                  border: 'none',
+                                  borderRadius: '12px',
+                                  fontSize: '16px',
+                                  fontWeight: '600',
+                                  cursor: markedDoneToday.has(habit.id) ? 'not-allowed' : 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '8px',
+                                  boxShadow: markedDoneToday.has(habit.id) ?
+                                    'none' :
+                                    '0 4px 12px rgba(76, 175, 80, 0.3)',
+                                  transition: 'transform 0.2s, box-shadow 0.2s',
+                                  opacity: markedDoneToday.has(habit.id) ? 0.6 : 1
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!markedDoneToday.has(habit.id)) {
+                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(76, 175, 80, 0.4)';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!markedDoneToday.has(habit.id)) {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(76, 175, 80, 0.3)';
+                                  }
+                                }}
+                              >
+                                <CheckCircle size={18} />
+                                {markedDoneToday.has(habit.id) ? 'Done!' : 'Mark Done'}
+                              </button>
+                            )}
+
+                            {/* Completed badge */}
+                            {habit.done && (
+                              <div style={{
                                 width: '100%',
-                                padding: '12px 20px',
-                                background: markedDoneToday.has(habit.id) ?
-                                  '#e0e0e0' :
-                                  'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
-                                color: markedDoneToday.has(habit.id) ? '#999' : 'white',
+                                padding: '10px 16px',
+                                background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+                                color: 'white',
                                 border: 'none',
                                 borderRadius: '12px',
-                                fontSize: '16px',
+                                fontSize: '15px',
                                 fontWeight: '600',
-                                cursor: markedDoneToday.has(habit.id) ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                gap: '8px',
-                                boxShadow: markedDoneToday.has(habit.id) ?
-                                  'none' :
-                                  '0 4px 12px rgba(76, 175, 80, 0.3)',
-                                transition: 'transform 0.2s, box-shadow 0.2s',
-                                opacity: markedDoneToday.has(habit.id) ? 0.6 : 1
-                              }}
-                              onMouseEnter={(e) => {
-                                if (!markedDoneToday.has(habit.id)) {
-                                  e.currentTarget.style.transform = 'translateY(-2px)';
-                                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(76, 175, 80, 0.4)';
-                                }
-                              }}
-                              onMouseLeave={(e) => {
-                                if (!markedDoneToday.has(habit.id)) {
-                                  e.currentTarget.style.transform = 'translateY(0)';
-                                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(76, 175, 80, 0.3)';
-                                }
-                              }}
-                            >
-                              <CheckCircle size={18} />
-                              {markedDoneToday.has(habit.id) ? 'Done!' : 'Mark Done'}
-                            </button>
+                                gap: '6px',
+                                boxSizing: 'border-box'
+                              }}>
+                                <Trophy size={16} />
+                                Completed!
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

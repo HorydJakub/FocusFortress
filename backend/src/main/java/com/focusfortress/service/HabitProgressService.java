@@ -29,6 +29,10 @@ public class HabitProgressService {
             throw new ForbiddenException("Access denied");
         }
 
+        if (habit.isDone()) {
+            throw new IllegalStateException("This habit is already completed");
+        }
+
         LocalDate today = LocalDate.now();
 
         if (habitProgressRepository.findByHabitAndDate(habit, today).isPresent()) {
@@ -40,7 +44,15 @@ public class HabitProgressService {
         progress.setDate(today);
         habitProgressRepository.save(progress);
 
-        return calculateStreak(habit, today);
+        int streak = calculateStreak(habit, today);
+
+        // Check if habit is completed
+        if (streak >= habit.getDurationDays()) {
+            habit.setDone(true);
+            habitRepository.save(habit);
+        }
+
+        return streak;
     }
 
     @Transactional(readOnly = true)
