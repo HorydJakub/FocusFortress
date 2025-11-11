@@ -98,6 +98,12 @@ public class HabitService {
             throw new IllegalStateException("Cannot edit a completed habit");
         }
 
+        // Block duration change after starting
+        int currentStreak = habitProgressService.getCurrentStreak(habitId, email);
+        if (currentStreak > 0 && habit.getDurationDays() != habitDTO.getDurationDays()) {
+            throw new IllegalStateException("Cannot change duration after starting the habit. Delete and recreate to restart.");
+        }
+
         Category category = categoryRepository.findById(habitDTO.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
