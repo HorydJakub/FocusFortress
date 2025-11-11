@@ -170,6 +170,51 @@ public class InterestService {
 
         Map<String, SubcategoryInfo> subcategoryMap = buildSubcategoryMap();
 
+        // Get current user interests
+        Set<String> currentSubcategoryNames = getUserSubcategoryNames(email);
+
+        // Validate all subcategory names first (both add and remove)
+        List<String> invalidSubcategories = new ArrayList<>();
+        for (String subcategoryName : dto.getAdd()) {
+            if (!subcategoryMap.containsKey(subcategoryName)) {
+                invalidSubcategories.add(subcategoryName);
+            }
+        }
+
+        // Check for duplicate additions (interests already present)
+        List<String> duplicateAdditions = new ArrayList<>();
+        for (String subcategoryName : dto.getAdd()) {
+            if (currentSubcategoryNames.contains(subcategoryName)) {
+                duplicateAdditions.add(subcategoryName);
+            }
+        }
+
+        // Check for invalid removals (interests not present)
+        List<String> invalidRemovals = new ArrayList<>();
+        for (String subcategoryName : dto.getRemove()) {
+            if (!currentSubcategoryNames.contains(subcategoryName)) {
+                invalidRemovals.add(subcategoryName);
+            }
+        }
+
+        // Build comprehensive error message
+        List<String> errorMessages = new ArrayList<>();
+        if (!invalidSubcategories.isEmpty()) {
+            errorMessages.add("Invalid subcategory name(s): " + String.join(", ", invalidSubcategories));
+        }
+        if (!duplicateAdditions.isEmpty()) {
+            errorMessages.add("Interest(s) already selected: " + String.join(", ", duplicateAdditions));
+        }
+        if (!invalidRemovals.isEmpty()) {
+            errorMessages.add("Interest(s) not currently selected: " + String.join(", ", invalidRemovals));
+        }
+
+        if (!errorMessages.isEmpty()) {
+            String fullErrorMessage = String.join(". ", errorMessages);
+            log.error("Interest management validation failed for user {}: {}", email, fullErrorMessage);
+            throw new IllegalArgumentException(fullErrorMessage);
+        }
+
         // Remove interests (hard delete)
         for (String subcategoryName : dto.getRemove()) {
             Subcategory subcategory = subcategoryRepository.findByName(subcategoryName).orElse(null);
@@ -182,11 +227,6 @@ public class InterestService {
         // Add new interests
         for (String subcategoryName : dto.getAdd()) {
             SubcategoryInfo info = subcategoryMap.get(subcategoryName);
-            if (info == null) {
-                log.warn("Subcategory not found in enum structure: {}", subcategoryName);
-                continue;
-            }
-
             // Find or create category
             Category category = categoryRepository.findByName(info.categoryName)
                     .orElseGet(() -> {
@@ -208,15 +248,14 @@ public class InterestService {
                         return subcategoryRepository.save(newSubcategory);
                     });
 
-            if (!userInterestRepository.existsByUserIdAndSubcategoryId(user.getId(), subcategory.getId())) {
-                UserInterest newInterest = UserInterest.builder()
-                        .user(user)
-                        .subcategory(subcategory)
-                        .build();
-                userInterestRepository.save(newInterest);
+            // Create user interest (we already validated it doesn't exist)
+            UserInterest newInterest = UserInterest.builder()
+                    .user(user)
+                    .subcategory(subcategory)
+                    .build();
+            userInterestRepository.save(newInterest);
 
-                log.info("Added interest {} for user {}", subcategoryName, email);
-            }
+            log.info("Added interest {} for user {}", subcategoryName, email);
         }
 
         return getUserInterests(email);
