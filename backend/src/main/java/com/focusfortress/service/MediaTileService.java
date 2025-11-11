@@ -19,64 +19,64 @@ public class MediaTileService {
     private final InterestService interestService;
     private final YouTubeApiClient youTubeApiClient;
 
-    // Dynamically build queries from InterestCategory subcategories
-    private static final Map<InterestCategory, List<String>> INTEREST_TO_QUERIES = buildQueryMap();
+    // Map subcategory names to search queries
+    private static final Map<String, List<String>> SUBCATEGORY_TO_QUERIES = buildQueryMap();
 
-    private static Map<InterestCategory, List<String>> buildQueryMap() {
-        Map<InterestCategory, List<String>> queryMap = new EnumMap<>(InterestCategory.class);
+    private static Map<String, List<String>> buildQueryMap() {
+        Map<String, List<String>> queryMap = new HashMap<>();
 
         for (InterestCategory interest : InterestCategory.values()) {
-            List<String> queries = new ArrayList<>();
-
             // Extract all subcategory names as search queries
             for (CategoryStructure category : interest.getCategories()) {
                 for (SubcategoryStructure subcategory : category.getSubcategories()) {
+                    String subcategoryName = subcategory.getName();
+                    List<String> queries = new ArrayList<>();
+
                     // Add the subcategory name as a query
-                    queries.add(subcategory.getName());
+                    queries.add(subcategoryName);
 
                     // Add enhanced queries with educational context
-                    queries.add(subcategory.getName() + " explained");
-                    queries.add(subcategory.getName() + " tutorial");
-                    queries.add("Learn " + subcategory.getName());
-                    queries.add(subcategory.getName() + " basics");
+                    queries.add(subcategoryName + " explained");
+                    queries.add(subcategoryName + " tutorial");
+                    queries.add("Learn " + subcategoryName);
+                    queries.add(subcategoryName + " basics");
+
+                    queryMap.put(subcategoryName, queries);
                 }
             }
-
-            queryMap.put(interest, queries);
-            log.debug("Built {} queries for {}: {}", queries.size(), interest.getDisplayName(), queries);
         }
 
+        log.debug("Built query map for {} subcategories", queryMap.size());
         return queryMap;
     }
 
     public List<VideoTileDTO> getPersonalizedTiles(String email, int limit) {
-        Set<InterestCategory> userInterests = interestService.getUserInterestCategories(email);
+        Set<String> userSubcategories = interestService.getUserSubcategoryNames(email);
 
-        if (userInterests.isEmpty()) {
+        if (userSubcategories.isEmpty()) {
             log.warn("User {} has no interests", email);
             return Collections.emptyList();
         }
 
         List<VideoTileDTO> allTiles = new ArrayList<>();
 
-        // For each interest, get 2-3 videos
-        int videosPerInterest = Math.max(2, limit / userInterests.size());
+        // For each subcategory, get 2-3 videos
+        int videosPerSubcategory = Math.max(2, limit / userSubcategories.size());
 
-        for (InterestCategory interest : userInterests) {
-            List<String> queries = INTEREST_TO_QUERIES.getOrDefault(interest, List.of());
+        for (String subcategoryName : userSubcategories) {
+            List<String> queries = SUBCATEGORY_TO_QUERIES.getOrDefault(subcategoryName, List.of());
             if (queries.isEmpty()) continue;
 
-            // Randomly select a query from this interest's subcategories
+            // Randomly select a query from this subcategory's queries
             String randomQuery = queries.get(new Random().nextInt(queries.size()));
 
-            log.info("Fetching YouTube videos for interest {} with query '{}'", interest.getDisplayName(), randomQuery);
+            log.info("Fetching YouTube videos for subcategory {} with query '{}'", subcategoryName, randomQuery);
 
-            List<VideoTileDTO> tiles = youTubeApiClient.searchEducationalVideos(randomQuery, videosPerInterest);
+            List<VideoTileDTO> tiles = youTubeApiClient.searchEducationalVideos(randomQuery, videosPerSubcategory);
 
-            // Tag with interest
+            // Tag with subcategory
             tiles.forEach(tile -> {
-                tile.setMatchedInterest(interest.getDisplayName());
-                tile.setMatchedInterestIcon(interest.getIcon());
+                tile.setMatchedInterest(subcategoryName);
             });
 
             allTiles.addAll(tiles);
@@ -87,15 +87,14 @@ public class MediaTileService {
         return allTiles.stream().limit(limit).collect(Collectors.toList());
     }
 
-    public List<VideoTileDTO> getTilesByInterest(String email, String interestKey, int limit) {
-        InterestCategory interest = InterestCategory.fromString(interestKey);
+    public List<VideoTileDTO> getTilesBySubcategory(String email, String subcategoryName, int limit) {
+        Set<String> userSubcategories = interestService.getUserSubcategoryNames(email);
 
-        Set<InterestCategory> userInterests = interestService.getUserInterestCategories(email);
-        if (!userInterests.contains(interest)) {
+        if (!userSubcategories.contains(subcategoryName)) {
             throw new IllegalArgumentException("User doesn't have this interest");
         }
 
-        List<String> queries = INTEREST_TO_QUERIES.getOrDefault(interest, List.of());
+        List<String> queries = SUBCATEGORY_TO_QUERIES.getOrDefault(subcategoryName, List.of());
         List<VideoTileDTO> allTiles = new ArrayList<>();
 
         // Randomly select subset of queries to get diverse content
@@ -113,8 +112,7 @@ public class MediaTileService {
             List<VideoTileDTO> tiles = youTubeApiClient.searchEducationalVideos(query, videosPerQuery);
 
             tiles.forEach(tile -> {
-                tile.setMatchedInterest(interest.getDisplayName());
-                tile.setMatchedInterestIcon(interest.getIcon());
+                tile.setMatchedInterest(subcategoryName);
             });
 
             allTiles.addAll(tiles);

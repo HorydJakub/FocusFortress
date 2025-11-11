@@ -1,6 +1,7 @@
 package com.focusfortress.controller;
 
 import com.focusfortress.dto.InterestCategoryDTO;
+import com.focusfortress.dto.SubcategoryOptionDTO;
 import com.focusfortress.service.InterestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,5 +30,15 @@ public class InterestController {
     @GetMapping
     public ResponseEntity<List<InterestCategoryDTO>> getAllInterests() {
         return ResponseEntity.ok(interestService.getAllAvailableInterests());
+    }
+
+    /**
+     * GET /api/interests/subcategories
+     * Returns all available subcategories (interests) for registration UI
+     * Public endpoint (no authentication required)
+     */
+    @GetMapping("/subcategories")
+    public ResponseEntity<List<SubcategoryOptionDTO>> getAllSubcategories() {
+        return ResponseEntity.ok(interestService.getAllAvailableSubcategories());
     }
 }

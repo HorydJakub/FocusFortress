@@ -86,9 +86,9 @@ public class User {
         interest.setUser(null);
     }
 
-    public Set<InterestCategory> getInterestCategories() {
+    public Set<Subcategory> getUserSubcategories() {
         return interests.stream()
-                .map(UserInterest::getInterest)
+                .map(UserInterest::getSubcategory)
                 .collect(java.util.stream.Collectors.toSet());
     }
 }

@@ -37,12 +37,13 @@ public class UserController {
         if (!userDTO.isGenderValid()) {
             return ResponseEntity.badRequest().body("Invalid gender value!");
         }
-        if (!userDTO.areInterestsValid()) {
-            return ResponseEntity.badRequest().body("Please select between 3 and 7 valid interests!");
-        }
 
-        userService.registerUser(userDTO);
-        return ResponseEntity.ok("Account created successfully! Please verify your email.");
+        try {
+            userService.registerUser(userDTO);
+            return ResponseEntity.ok("Account created successfully! Please verify your email.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping("/verify")

@@ -2,6 +2,7 @@ package com.focusfortress.service;
 
 import com.focusfortress.dto.InterestCategoryDTO;
 import com.focusfortress.dto.ManageInterestsDTO;
+import com.focusfortress.dto.SubcategoryOptionDTO;
 import com.focusfortress.dto.UserInterestDTO;
 import com.focusfortress.model.*;
 import com.focusfortress.repository.CategoryRepository;
@@ -14,8 +15,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -29,60 +29,116 @@ public class InterestService {
     private final UserInterestRepository userInterestRepository;
 
     @Transactional
-    public void createInitialInterestsForUser(User user, Set<InterestCategory> interests) {
-        log.info("Creating initial interests for user: {}", user.getEmail());
+    public void createInitialInterestsForUser(User user, Set<String> subcategoryNames) {
+        log.info("Creating initial interests for user: {} with subcategories: {}", user.getEmail(), subcategoryNames);
 
-        for (InterestCategory interest : interests) {
-            UserInterest userInterest = UserInterest.builder()
-                    .user(user)
-                    .interest(interest)
-                    .build();
+        // Get all subcategory structures from all InterestCategory enums
+        Map<String, SubcategoryInfo> subcategoryMap = buildSubcategoryMap();
 
-            user.addInterest(userInterest);
+        // Validate all subcategory names first
+        List<String> invalidSubcategories = new ArrayList<>();
+        for (String subcategoryName : subcategoryNames) {
+            if (!subcategoryMap.containsKey(subcategoryName)) {
+                invalidSubcategories.add(subcategoryName);
+            }
+        }
 
-            List<CategoryStructure> categoryStructures = interest.getCategories();
+        if (!invalidSubcategories.isEmpty()) {
+            log.error("Invalid subcategories provided: {}", invalidSubcategories);
+            throw new IllegalArgumentException("Invalid interest(s): " + String.join(", ", invalidSubcategories) +
+                    ". Please select valid subcategories from the available options.");
+        }
 
-            for (CategoryStructure categoryStructure : categoryStructures) {
-                String categoryName = categoryStructure.getName();
-                String categoryIcon = categoryStructure.getIcon();
+        for (String subcategoryName : subcategoryNames) {
+            SubcategoryInfo info = subcategoryMap.get(subcategoryName);
 
-                Category category = categoryRepository.findByName(categoryName)
-                        .orElseGet(() -> {
-                            Category newCategory = Category.builder()
-                                    .name(categoryName)
-                                    .icon(categoryIcon)
-                                    .build();
-                            return categoryRepository.save(newCategory);
-                        });
+            // Find or create category
+            Category category = categoryRepository.findByName(info.categoryName)
+                    .orElseGet(() -> {
+                        Category newCategory = Category.builder()
+                                .name(info.categoryName)
+                                .icon(info.categoryIcon)
+                                .build();
+                        return categoryRepository.save(newCategory);
+                    });
 
-                for (SubcategoryStructure subcategoryStructure : categoryStructure.getSubcategories()) {
-                    String subcategoryName = subcategoryStructure.getName();
-                    String subcategoryIcon = subcategoryStructure.getIcon();
-
-                    if (!subcategoryRepository.existsByNameAndCategoryId(subcategoryName, category.getId())) {
-                        Subcategory subcategory = Subcategory.builder()
+            // Find or create subcategory
+            Subcategory subcategory = subcategoryRepository.findByNameAndCategoryId(subcategoryName, category.getId())
+                    .orElseGet(() -> {
+                        Subcategory newSubcategory = Subcategory.builder()
                                 .name(subcategoryName)
-                                .icon(subcategoryIcon)
+                                .icon(info.subcategoryIcon)
                                 .category(category)
                                 .build();
-                        subcategoryRepository.save(subcategory);
-                    }
-                }
-            }
+                        return subcategoryRepository.save(newSubcategory);
+                    });
+
+            // Create user interest
+            UserInterest userInterest = UserInterest.builder()
+                    .user(user)
+                    .subcategory(subcategory)
+                    .build();
+            userInterestRepository.save(userInterest);
         }
 
         log.info("Successfully created initial interest structure for user");
     }
 
+    private Map<String, SubcategoryInfo> buildSubcategoryMap() {
+        Map<String, SubcategoryInfo> map = new HashMap<>();
+
+        for (InterestCategory interestCategory : InterestCategory.values()) {
+            for (CategoryStructure categoryStructure : interestCategory.getCategories()) {
+                String categoryName = categoryStructure.getName();
+                String categoryIcon = categoryStructure.getIcon();
+
+                for (SubcategoryStructure subcategoryStructure : categoryStructure.getSubcategories()) {
+                    String subcategoryName = subcategoryStructure.getName();
+                    String subcategoryIcon = subcategoryStructure.getIcon();
+
+                    map.put(subcategoryName, new SubcategoryInfo(
+                            subcategoryName,
+                            subcategoryIcon,
+                            categoryName,
+                            categoryIcon
+                    ));
+                }
+            }
+        }
+
+        return map;
+    }
+
     public List<InterestCategoryDTO> getAllAvailableInterests() {
-        return List.of(InterestCategory.values()).stream()
+        return Arrays.stream(InterestCategory.values())
                 .map(ic -> new InterestCategoryDTO(
                         ic.name(),
                         ic.getDisplayName(),
-                        ic.getIcon(),
                         ic.getCategories()
                 ))
                 .toList();
+    }
+
+    public List<SubcategoryOptionDTO> getAllAvailableSubcategories() {
+        List<SubcategoryOptionDTO> options = new ArrayList<>();
+
+        for (InterestCategory interestCategory : InterestCategory.values()) {
+            for (CategoryStructure categoryStructure : interestCategory.getCategories()) {
+                String categoryName = categoryStructure.getName();
+                String categoryIcon = categoryStructure.getIcon();
+
+                for (SubcategoryStructure subcategoryStructure : categoryStructure.getSubcategories()) {
+                    options.add(new SubcategoryOptionDTO(
+                            subcategoryStructure.getName(),
+                            subcategoryStructure.getIcon(),
+                            categoryName,
+                            categoryIcon
+                    ));
+                }
+            }
+        }
+
+        return options;
     }
 
     @Transactional(readOnly = true)
@@ -96,41 +152,126 @@ public class InterestService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public Set<String> getUserSubcategoryNames(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        return userInterestRepository.findByUserIdOrderBySelectedAtDesc(user.getId())
+                .stream()
+                .map(ui -> ui.getSubcategory().getName())
+                .collect(Collectors.toSet());
+    }
+
     @Transactional
     public List<UserInterestDTO> manageUserInterests(String email, ManageInterestsDTO dto) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+        Map<String, SubcategoryInfo> subcategoryMap = buildSubcategoryMap();
+
+        // Get current user interests
+        Set<String> currentSubcategoryNames = getUserSubcategoryNames(email);
+
+        // Validate all subcategory names first (both add and remove)
+        List<String> invalidSubcategories = new ArrayList<>();
+        for (String subcategoryName : dto.getAdd()) {
+            if (!subcategoryMap.containsKey(subcategoryName)) {
+                invalidSubcategories.add(subcategoryName);
+            }
+        }
+
+        // Check for duplicate additions (interests already present)
+        List<String> duplicateAdditions = new ArrayList<>();
+        for (String subcategoryName : dto.getAdd()) {
+            if (currentSubcategoryNames.contains(subcategoryName)) {
+                duplicateAdditions.add(subcategoryName);
+            }
+        }
+
+        // Check for invalid removals (interests not present)
+        List<String> invalidRemovals = new ArrayList<>();
+        for (String subcategoryName : dto.getRemove()) {
+            if (!currentSubcategoryNames.contains(subcategoryName)) {
+                invalidRemovals.add(subcategoryName);
+            }
+        }
+
+        // Build comprehensive error message
+        List<String> errorMessages = new ArrayList<>();
+        if (!invalidSubcategories.isEmpty()) {
+            errorMessages.add("Invalid subcategory name(s): " + String.join(", ", invalidSubcategories));
+        }
+        if (!duplicateAdditions.isEmpty()) {
+            errorMessages.add("Interest(s) already selected: " + String.join(", ", duplicateAdditions));
+        }
+        if (!invalidRemovals.isEmpty()) {
+            errorMessages.add("Interest(s) not currently selected: " + String.join(", ", invalidRemovals));
+        }
+
+        if (!errorMessages.isEmpty()) {
+            String fullErrorMessage = String.join(". ", errorMessages);
+            log.error("Interest management validation failed for user {}: {}", email, fullErrorMessage);
+            throw new IllegalArgumentException(fullErrorMessage);
+        }
+
         // Remove interests (hard delete)
-        for (String interestKey : dto.getRemove()) {
-            InterestCategory interest = InterestCategory.fromString(interestKey);
-            userInterestRepository.deleteByUserIdAndInterest(user.getId(), interest);
-            log.info("Removed interest {} for user {}", interest, email);
+        for (String subcategoryName : dto.getRemove()) {
+            Subcategory subcategory = subcategoryRepository.findByName(subcategoryName).orElse(null);
+            if (subcategory != null) {
+                userInterestRepository.deleteByUserIdAndSubcategoryId(user.getId(), subcategory.getId());
+                log.info("Removed interest {} for user {}", subcategoryName, email);
+            }
         }
 
         // Add new interests
-        for (String interestKey : dto.getAdd()) {
-            InterestCategory interest = InterestCategory.fromString(interestKey);
+        for (String subcategoryName : dto.getAdd()) {
+            SubcategoryInfo info = subcategoryMap.get(subcategoryName);
+            // Find or create category
+            Category category = categoryRepository.findByName(info.categoryName)
+                    .orElseGet(() -> {
+                        Category newCategory = Category.builder()
+                                .name(info.categoryName)
+                                .icon(info.categoryIcon)
+                                .build();
+                        return categoryRepository.save(newCategory);
+                    });
 
-            if (!userInterestRepository.existsByUserIdAndInterest(user.getId(), interest)) {
-                UserInterest newInterest = UserInterest.builder()
-                        .user(user)
-                        .interest(interest)
-                        .build();
-                userInterestRepository.save(newInterest);
+            // Find or create subcategory
+            Subcategory subcategory = subcategoryRepository.findByNameAndCategoryId(subcategoryName, category.getId())
+                    .orElseGet(() -> {
+                        Subcategory newSubcategory = Subcategory.builder()
+                                .name(subcategoryName)
+                                .icon(info.subcategoryIcon)
+                                .category(category)
+                                .build();
+                        return subcategoryRepository.save(newSubcategory);
+                    });
 
-                log.info("Added interest {} for user {}", interest, email);
-            }
+            // Create user interest (we already validated it doesn't exist)
+            UserInterest newInterest = UserInterest.builder()
+                    .user(user)
+                    .subcategory(subcategory)
+                    .build();
+            userInterestRepository.save(newInterest);
+
+            log.info("Added interest {} for user {}", subcategoryName, email);
         }
 
         return getUserInterests(email);
     }
 
-    @Transactional(readOnly = true)
-    public Set<InterestCategory> getUserInterestCategories(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    private static class SubcategoryInfo {
+        String subcategoryName;
+        String subcategoryIcon;
+        String categoryName;
+        String categoryIcon;
 
-        return userInterestRepository.findInterestCategoriesByUserId(user.getId());
+        SubcategoryInfo(String subcategoryName, String subcategoryIcon, String categoryName, String categoryIcon) {
+            this.subcategoryName = subcategoryName;
+            this.subcategoryIcon = subcategoryIcon;
+            this.categoryName = categoryName;
+            this.categoryIcon = categoryIcon;
+        }
     }
 }

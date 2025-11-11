@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_interests",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "interest"}))
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "subcategory_id"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,9 +24,9 @@ public class UserInterest {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private InterestCategory interest;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "subcategory_id", nullable = false)
+    private Subcategory subcategory;
 
     @CreationTimestamp
     @Column(updatable = false)

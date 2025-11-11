@@ -2,7 +2,6 @@
 package com.focusfortress.service;
 
 import com.focusfortress.dto.UserRegistrationDTO;
-import com.focusfortress.model.InterestCategory;
 import com.focusfortress.model.Role;
 import com.focusfortress.model.User;
 import com.focusfortress.repository.UserRepository;
@@ -11,9 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -32,10 +29,6 @@ public class UserService {
 
         String token = UUID.randomUUID().toString();
 
-        Set<InterestCategory> interests = userDTO.getSelectedInterests().stream()
-                .map(InterestCategory::fromString)
-                .collect(Collectors.toSet());
-
         User user = new User(
                 userDTO.getName(),
                 userDTO.getEmail(),
@@ -49,8 +42,8 @@ public class UserService {
 
         userRepository.save(user);
 
-        // Create UserInterest entities + Categories/Subcategories
-        interestService.createInitialInterestsForUser(user, interests);
+        // Create UserInterest entities + Categories/Subcategories based on selected subcategory names
+        interestService.createInitialInterestsForUser(user, userDTO.getSelectedInterests());
 
         emailService.sendVerificationEmail(user.getEmail(), token);
 

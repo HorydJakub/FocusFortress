@@ -16,5 +16,4 @@ public class VideoTileDTO {
     private String thumbnailUrl;
     private String description;
     private String matchedInterest;
-    private String matchedInterestIcon;
 }

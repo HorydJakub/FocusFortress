@@ -8,7 +8,6 @@ import java.util.List;
 public enum InterestCategory {
         PHILOSOPHY_MINDFULNESS(
             "Philosophy & Mindfulness",
-            "🧘",
             List.of(
                     new CategoryStructure("Mind & Body", "🧠", List.of(
                             new SubcategoryStructure("Meditation", "🧘‍♂️"),
@@ -26,7 +25,6 @@ public enum InterestCategory {
 
     SCIENCE_TECHNOLOGY(
             "Science & Technology",
-            "🔬",
             List.of(
                     new CategoryStructure("Natural Sciences", "🌌", List.of(
                             new SubcategoryStructure("Biology", "🧬"),
@@ -44,7 +42,6 @@ public enum InterestCategory {
 
     HEALTH_FITNESS(
             "Health & Fitness",
-            "💪",
             List.of(
                     new CategoryStructure("Physical Health", "🏃", List.of(
                             new SubcategoryStructure("Exercise", "🏋️"),
@@ -62,7 +59,6 @@ public enum InterestCategory {
 
     PERSONAL_DEVELOPMENT(
             "Personal Development",
-            "🌱",
             List.of(
                     new CategoryStructure("Skills & Learning", "📚", List.of(
                             new SubcategoryStructure("Reading", "📖"),
@@ -79,7 +75,6 @@ public enum InterestCategory {
 
     FINANCE_WEALTH(
             "Finance & Wealth",
-            "💰",
             List.of(
                     new CategoryStructure("Personal Finance", "💵", List.of(
                             new SubcategoryStructure("Budgeting", "📊"),
@@ -97,7 +92,6 @@ public enum InterestCategory {
 
     CREATIVITY_ARTS(
             "Creativity & Arts",
-            "🎨",
             List.of(
                     new CategoryStructure("Creative Expression", "🖌️", List.of(
                             new SubcategoryStructure("Writing", "✍️"),
@@ -115,7 +109,6 @@ public enum InterestCategory {
 
     RELATIONSHIPS_SOCIAL(
             "Relationships & Social",
-            "👥",
             List.of(
                     new CategoryStructure("Connections", "💞", List.of(
                             new SubcategoryStructure("Communication", "💬"),
@@ -132,7 +125,6 @@ public enum InterestCategory {
 
     NATURE_ENVIRONMENT(
             "Nature & Environment",
-            "🌍",
             List.of(
                     new CategoryStructure("Sustainability", "♻️", List.of(
                             new SubcategoryStructure("Eco-Living", "🌿"),
@@ -149,7 +141,6 @@ public enum InterestCategory {
 
     HISTORY_CULTURE(
             "History & Culture",
-            "📚",
             List.of(
                     new CategoryStructure("Human History", "🏛️", List.of(
                             new SubcategoryStructure("Ancient Civilizations", "🏺"),
@@ -166,7 +157,6 @@ public enum InterestCategory {
 
     SPIRITUALITY(
             "Spirituality",
-            "✨",
             List.of(
                     new CategoryStructure("Inner Journey", "🔮", List.of(
                             new SubcategoryStructure("Spiritual Practices", "🕉️"),
@@ -182,12 +172,10 @@ public enum InterestCategory {
     );
 
     private final String displayName;
-    private final String icon;
     private final List<CategoryStructure> categories;
 
-    InterestCategory(String displayName, String icon, List<CategoryStructure> categories) {
+    InterestCategory(String displayName, List<CategoryStructure> categories) {
         this.displayName = displayName;
-        this.icon = icon;
         this.categories = categories;
     }
 
