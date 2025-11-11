@@ -1,6 +1,7 @@
 package com.focusfortress.dto;
 
-import com.focusfortress.model.InterestCategory;
+import com.focusfortress.model.Category;
+import com.focusfortress.model.Subcategory;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,18 +15,22 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class UserInterestDTO {
     private Long id;
-    private String interestKey;
-    private String displayName;
-    private String icon;
+    private String subcategoryName;
+    private String subcategoryIcon;
+    private String categoryName;
+    private String categoryIcon;
     private LocalDateTime selectedAt;
 
     public static UserInterestDTO fromEntity(com.focusfortress.model.UserInterest entity) {
-        InterestCategory ic = entity.getInterest();
+        Subcategory subcategory = entity.getSubcategory();
+        Category category = subcategory.getCategory();
+
         return new UserInterestDTO(
                 entity.getId(),
-                ic.name(),
-                ic.getDisplayName(),
-                ic.getIcon(),
+                subcategory.getName(),
+                subcategory.getIcon(),
+                category.getName(),
+                category.getIcon(),
                 entity.getSelectedAt()
         );
     }

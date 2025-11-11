@@ -1,6 +1,5 @@
 package com.focusfortress.dto;
 
-import com.focusfortress.model.InterestCategory;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,7 +36,7 @@ public class UserRegistrationDTO {
     @NotBlank(message = "Password confirmation is required")
     private String confirmPassword;
 
-    // Selected interests (InterestCategory keys)
+    // Selected interests (subcategory names like "Meditation", "Physics", "Critical Thinking" etc..)
     @NotNull(message = "Selected interests are required")
     @Size(min = 3, max = 7, message = "Please select between 3 and 7 interests")
     private Set<String> selectedInterests;
@@ -48,19 +47,5 @@ public class UserRegistrationDTO {
 
     public boolean isGenderValid() {
         return gender == null || ALLOWED_GENDERS.contains(gender);
-    }
-
-    public boolean areInterestsValid() {
-        if (selectedInterests == null || selectedInterests.size() < 3 || selectedInterests.size() > 7) {
-            return false;
-        }
-        try {
-            for (String interest : selectedInterests) {
-                InterestCategory.fromString(interest);
-            }
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
     }
 }
