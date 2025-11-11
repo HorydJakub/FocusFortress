@@ -40,22 +40,26 @@ const Habits = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const dropdownRef = useRef(null);
 
-  // Track which habits were marked done today - with localStorage
   const [markedDoneToday, setMarkedDoneToday] = useState(() => {
     try {
       const stored = localStorage.getItem('markedDoneToday');
       if (stored) {
         const { date, habitIds } = JSON.parse(stored);
         const today = new Date().toDateString();
+
         if (date === today) {
           return new Set(habitIds);
+        } else {
+          localStorage.removeItem('markedDoneToday');
         }
       }
     } catch (e) {
       console.error('Failed to load markedDoneToday from localStorage:', e);
+      localStorage.removeItem('markedDoneToday'); // Wyczyść w razie błędu
     }
     return new Set();
   });
+
 
   const [availableSubcategories, setAvailableSubcategories] = useState([]);
   const [canAddHabit, setCanAddHabit] = useState(false);
@@ -406,9 +410,16 @@ const Habits = () => {
   const handleMarkDone = async (habitId) => {
     try {
       const habit = habits.find(h => h.id === habitId);
+
+      if (markedDoneToday.has(habitId)) {
+        console.log('Habit already marked today:', habitId);
+        return;
+      }
+
       const response = await api.post(`/habits/${habitId}/done`);
       const newStreak = response.data;
 
+      console.log('Successfully marked habit as done:', habitId, 'New streak:', newStreak);
       setMarkedDoneToday(prev => new Set([...prev, habitId]));
 
       // Check if habit was just completed
@@ -421,15 +432,17 @@ const Habits = () => {
       await fetchHabits(); // Refresh to update done status
     } catch (e) {
       console.error('Failed to mark habit as done:', e);
-      if (e.response?.data?.message?.includes('Already marked') ||
-          e.response?.data?.message?.includes('already marked') ||
-          e.response?.data?.message?.includes('already completed')) {
+      const errorMessage = e.response?.data?.message || '';
+
+      if (errorMessage.toLowerCase().includes('already') &&
+          errorMessage.toLowerCase().includes('today')) {
         setMarkedDoneToday(prev => new Set([...prev, habitId]));
       } else {
-        alert(e.response?.data?.message || 'Failed to mark habit as done');
+        alert(errorMessage || 'Failed to mark habit as done');
       }
     }
   };
+
 
   // Navigation helpers
   const navigateToCategory = (category) => {
@@ -1589,21 +1602,51 @@ const Habits = () => {
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
               Duration (days)
             </label>
+
             <input
               type="number"
               value={current.durationDays}
               onChange={(e) => setCurrent({ ...current, durationDays: parseInt(e.target.value) || 1 })}
+              disabled={isEdit && editingHabit?.currentStreak > 0}
               min="1"
               max="365"
               style={{
-                width: '100%', padding: '12px 16px', fontSize: '16px',
-                borderRadius: '12px', border: '2px solid #e0e0e0',
-                outline: 'none', transition: 'border-color 0.2s',
-                boxSizing: 'border-box'
+                width: '100%',
+                padding: '12px 16px',
+                fontSize: '16px',
+                borderRadius: '12px',
+                border: '2px solid #e0e0e0',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+                boxSizing: 'border-box',
+                opacity: (isEdit && editingHabit?.currentStreak > 0) ? 0.6 : 1,
+                cursor: (isEdit && editingHabit?.currentStreak > 0) ? 'not-allowed' : 'text'
               }}
               onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
               onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
             />
+
+            {!(isEdit && editingHabit?.currentStreak > 0) && (
+              <div style={{
+                fontSize: '13px',
+                color: '#856404',
+                marginTop: '8px',
+                lineHeight: '1.5'
+              }}>
+                ⚠️ <strong>Important:</strong> Duration cannot be changed once you start tracking this habit.
+              </div>
+            )}
+
+            {isEdit && editingHabit?.currentStreak > 0 && (
+              <div style={{
+                fontSize: '13px',
+                color: '#dc3545',
+                marginTop: '8px',
+                lineHeight: '1.5'
+              }}>
+                🔒 <strong>Locked:</strong> Duration cannot be changed. Delete and recreate to modify.
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: '24px' }}>
