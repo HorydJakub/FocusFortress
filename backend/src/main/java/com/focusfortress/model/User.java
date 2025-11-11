@@ -7,6 +7,8 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users", uniqueConstraints = {@UniqueConstraint(columnNames = "email")})
@@ -53,7 +55,11 @@ public class User {
     @Column(length = 500)
     private String bio;
 
-    private String timezone;  // e.g. "Europe/Warsaw"
+    private String timezone;
+
+    // NEW: One-to-Many relationship with UserInterest
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UserInterest> interests = new HashSet<>();
 
     public boolean isVerified() {
         return role != Role.UNVERIFIED;
@@ -67,5 +73,22 @@ public class User {
         this.password = password;
         this.verificationToken = verificationToken;
         this.role = Role.UNVERIFIED;
+    }
+
+    // Helper methods for managing interests
+    public void addInterest(UserInterest interest) {
+        interests.add(interest);
+        interest.setUser(this);
+    }
+
+    public void removeInterest(UserInterest interest) {
+        interests.remove(interest);
+        interest.setUser(null);
+    }
+
+    public Set<InterestCategory> getInterestCategories() {
+        return interests.stream()
+                .map(UserInterest::getInterest)
+                .collect(java.util.stream.Collectors.toSet());
     }
 }
