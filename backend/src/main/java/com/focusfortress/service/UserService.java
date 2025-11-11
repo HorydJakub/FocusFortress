@@ -1,6 +1,8 @@
+// backend/src/main/java/com/focusfortress/service/UserService.java
 package com.focusfortress.service;
 
 import com.focusfortress.dto.UserRegistrationDTO;
+import com.focusfortress.model.InterestCategory;
 import com.focusfortress.model.Role;
 import com.focusfortress.model.User;
 import com.focusfortress.repository.UserRepository;
@@ -9,7 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -18,6 +22,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final InterestService interestService;
 
     @Transactional
     public User registerUser(UserRegistrationDTO userDTO) {
@@ -26,6 +31,10 @@ public class UserService {
         }
 
         String token = UUID.randomUUID().toString();
+
+        Set<InterestCategory> interests = userDTO.getSelectedInterests().stream()
+                .map(InterestCategory::fromString)
+                .collect(Collectors.toSet());
 
         User user = new User(
                 userDTO.getName(),
@@ -39,6 +48,10 @@ public class UserService {
         user.setTimezone("Europe/Warsaw"); // Default value, user can change it later
 
         userRepository.save(user);
+
+        // Create UserInterest entities + Categories/Subcategories
+        interestService.createInitialInterestsForUser(user, interests);
+
         emailService.sendVerificationEmail(user.getEmail(), token);
 
         return user;
