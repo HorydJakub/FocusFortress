@@ -15,6 +15,5 @@ import java.util.List;
 public class InterestCategoryDTO {
     private String key;  // e.g. "PHILOSOPHY_MINDFULNESS"
     private String displayName;  // e.g. "Philosophy & Mindfulness"
-    private String icon;
     private List<CategoryStructure> structure;  // Categories + Subcategories with icons
 }

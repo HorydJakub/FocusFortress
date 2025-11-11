@@ -110,11 +110,10 @@ public class InterestService {
     }
 
     public List<InterestCategoryDTO> getAllAvailableInterests() {
-        return List.of(InterestCategory.values()).stream()
+        return Arrays.stream(InterestCategory.values())
                 .map(ic -> new InterestCategoryDTO(
                         ic.name(),
                         ic.getDisplayName(),
-                        ic.getIcon(),
                         ic.getCategories()
                 ))
                 .toList();

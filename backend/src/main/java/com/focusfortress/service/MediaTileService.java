@@ -77,7 +77,6 @@ public class MediaTileService {
             // Tag with subcategory
             tiles.forEach(tile -> {
                 tile.setMatchedInterest(subcategoryName);
-                tile.setMatchedInterestIcon("🎯"); // Default icon, could be enhanced
             });
 
             allTiles.addAll(tiles);
@@ -114,7 +113,6 @@ public class MediaTileService {
 
             tiles.forEach(tile -> {
                 tile.setMatchedInterest(subcategoryName);
-                tile.setMatchedInterestIcon("🎯");
             });
 
             allTiles.addAll(tiles);
