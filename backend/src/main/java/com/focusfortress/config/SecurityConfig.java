@@ -36,7 +36,8 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify", "/api/interests").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify").permitAll()
+                        .requestMatchers("/api/interests", "/api/interests/**").permitAll()  // Allow all interest endpoints
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/admin/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated()

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AlertCircle, ChevronRight } from 'lucide-react';
@@ -11,14 +11,50 @@ const AuthPage = () => {
     dateOfBirth: '',
     gender: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    selectedInterests: []
   });
+  const [availableInterests, setAvailableInterests] = useState([]);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
+
+  // Fetch available interests when component mounts
+  useEffect(() => {
+    const fetchInterests = async () => {
+      try {
+        console.log('Fetching interests from API...');
+        const response = await fetch('http://localhost:8080/api/interests/subcategories');
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch interests');
+        }
+
+        const data = await response.json();
+        console.log('Received data:', data);
+        console.log('Is array?', Array.isArray(data));
+
+        if (Array.isArray(data)) {
+          setAvailableInterests(data);
+          console.log('Set interests:', data.length, 'items');
+        } else {
+          console.error('Data is not an array:', data);
+          setAvailableInterests([]);
+        }
+      } catch (error) {
+        console.error('Error fetching interests:', error);
+        setAvailableInterests([]);
+      }
+    };
+
+    if (!isLogin) {
+      fetchInterests();
+    }
+  }, [isLogin]);
 
   const handleChange = (e) => {
     setFormData({
@@ -30,6 +66,30 @@ const AuthPage = () => {
         ...errors,
         [e.target.name]: ''
       });
+    }
+  };
+
+  const toggleInterest = (interestName) => {
+    const currentInterests = formData.selectedInterests;
+    let newInterests;
+
+    if (currentInterests.includes(interestName)) {
+      newInterests = currentInterests.filter(i => i !== interestName);
+    } else {
+      if (currentInterests.length >= 7) {
+        setErrors({ ...errors, interests: 'Maximum 7 interests allowed' });
+        return;
+      }
+      newInterests = [...currentInterests, interestName];
+    }
+
+    setFormData({
+      ...formData,
+      selectedInterests: newInterests
+    });
+
+    if (errors.interests) {
+      setErrors({ ...errors, interests: '' });
     }
   };
 
@@ -45,6 +105,12 @@ const AuthPage = () => {
       }
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = 'Passwords do not match';
+      }
+      if (formData.selectedInterests.length < 3) {
+        newErrors.interests = 'Please select at least 3 interests';
+      }
+      if (formData.selectedInterests.length > 7) {
+        newErrors.interests = 'Please select maximum 7 interests';
       }
     }
 
@@ -80,7 +146,8 @@ const AuthPage = () => {
           dateOfBirth: formData.dateOfBirth,
           gender: formData.gender || null,
           password: formData.password,
-          confirmPassword: formData.confirmPassword
+          confirmPassword: formData.confirmPassword,
+          selectedInterests: formData.selectedInterests
         });
         setMessage('Registration successful! Please check your email to verify your account.');
         setTimeout(() => {
@@ -91,7 +158,8 @@ const AuthPage = () => {
             dateOfBirth: '',
             gender: '',
             password: '',
-            confirmPassword: ''
+            confirmPassword: '',
+            selectedInterests: []
           });
         }, 3000);
       }
@@ -112,9 +180,14 @@ const AuthPage = () => {
       dateOfBirth: '',
       gender: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      selectedInterests: []
     });
   };
+
+  const selectedCount = formData.selectedInterests.length;
+  const minRequired = 3;
+  const maxAllowed = 7;
 
   return (
     <div style={{
@@ -125,7 +198,7 @@ const AuthPage = () => {
       padding: '20px',
       background: 'linear-gradient(135deg, #fff5eb 0%, #ffe8d6 100%)'
     }}>
-      <div style={{ maxWidth: '600px', width: '100%' }}>
+      <div style={{ maxWidth: '700px', width: '100%' }}>
         <div style={{
           background: 'white',
           borderRadius: '24px',
@@ -323,33 +396,196 @@ const AuthPage = () => {
             </div>
 
             {!isLogin && (
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Confirm your password"
-                  disabled={isLoading}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    fontSize: '16px',
-                    borderRadius: '12px',
-                    border: `2px solid ${errors.confirmPassword ? '#dc3545' : '#e0e0e0'}`,
-                    outline: 'none',
-                    transition: 'border-color 0.2s',
-                    opacity: isLoading ? 0.6 : 1,
-                    boxSizing: 'border-box'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
-                  onBlur={(e) => e.target.style.borderColor = errors.confirmPassword ? '#dc3545' : '#e0e0e0'}
-                />
-                {errors.confirmPassword && <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.confirmPassword}</div>}
-              </div>
+              <>
+                <div style={{ marginBottom: '24px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Confirm your password"
+                    disabled={isLoading}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '16px',
+                      borderRadius: '12px',
+                      border: `2px solid ${errors.confirmPassword ? '#dc3545' : '#e0e0e0'}`,
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      opacity: isLoading ? 0.6 : 1,
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                    onBlur={(e) => e.target.style.borderColor = errors.confirmPassword ? '#dc3545' : '#e0e0e0'}
+                  />
+                  {errors.confirmPassword && <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.confirmPassword}</div>}
+                </div>
+
+                {/* INTERESTS SECTION */}
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <label style={{ fontWeight: '600', color: '#333', margin: 0, fontSize: '15px' }}>
+                      Select Your Interests
+                    </label>
+                    <div style={{
+                      fontSize: '15px',
+                      fontWeight: '700',
+                      color: selectedCount >= minRequired ? '#4caf50' : '#ff9800',
+                      background: selectedCount >= minRequired
+                        ? 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)'
+                        : 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      border: `2px solid ${selectedCount >= minRequired ? '#4caf50' : '#ff9800'}`
+                    }}>
+                      {selectedCount} / {maxAllowed}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    fontSize: '13px',
+                    color: '#666',
+                    marginBottom: '16px',
+                    fontStyle: 'italic'
+                  }}>
+                    {selectedCount < minRequired
+                      ? `Choose at least ${minRequired - selectedCount} more topic${minRequired - selectedCount > 1 ? 's' : ''} to continue`
+                      : selectedCount === maxAllowed
+                      ? '✓ Perfect selection!'
+                      : `Great! You can pick ${maxAllowed - selectedCount} more`}
+                  </div>
+
+                  {errors.interests && (
+                    <div style={{
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      marginBottom: '12px',
+                      backgroundColor: '#fee',
+                      color: '#c33',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      border: '2px solid #fcc'
+                    }}>
+                      ⚠️ {errors.interests}
+                    </div>
+                  )}
+
+                  {/* Interest Bubbles */}
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                    maxHeight: '320px',
+                    overflowY: 'auto',
+                    padding: '16px',
+                    border: `2px solid ${errors.interests ? '#fcc' : '#e8e8e8'}`,
+                    borderRadius: '16px',
+                    background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
+                  }}>
+                    {availableInterests.length === 0 ? (
+                      <div style={{
+                        width: '100%',
+                        textAlign: 'center',
+                        padding: '30px 20px',
+                        color: '#999',
+                        fontSize: '14px'
+                      }}>
+                        <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔄</div>
+                        Loading interests...
+                      </div>
+                    ) : (
+                      availableInterests.map((interest) => {
+                        const isSelected = formData.selectedInterests.includes(interest.name);
+
+                        return (
+                          <button
+                            key={interest.name}
+                            onClick={() => toggleInterest(interest.name)}
+                            disabled={isLoading}
+                            type="button"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              padding: '12px 18px',
+                              border: `2px solid ${isSelected ? '#ff6b35' : 'transparent'}`,
+                              borderRadius: '24px',
+                              background: isSelected
+                                ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)'
+                                : 'white',
+                              color: isSelected ? 'white' : '#333',
+                              fontSize: '14.5px',
+                              fontWeight: isSelected ? '600' : '500',
+                              cursor: isLoading ? 'not-allowed' : 'pointer',
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              opacity: isLoading ? 0.6 : 1,
+                              boxShadow: isSelected
+                                ? '0 8px 16px rgba(255, 107, 53, 0.35), 0 3px 6px rgba(255, 107, 53, 0.25)'
+                                : '0 2px 4px rgba(0,0,0,0.08)',
+                              transform: isSelected ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isLoading) {
+                                if (!isSelected) {
+                                  e.currentTarget.style.borderColor = '#ff6b35';
+                                  e.currentTarget.style.background = 'linear-gradient(135deg, #fff5eb 0%, #ffe8d6 100%)';
+                                  e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
+                                  e.currentTarget.style.boxShadow = '0 6px 12px rgba(255, 107, 53, 0.2)';
+                                } else {
+                                  e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
+                                  e.currentTarget.style.boxShadow = '0 12px 24px rgba(255, 107, 53, 0.4), 0 6px 12px rgba(255, 107, 53, 0.3)';
+                                }
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isLoading) {
+                                if (!isSelected) {
+                                  e.currentTarget.style.borderColor = 'transparent';
+                                  e.currentTarget.style.background = 'white';
+                                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.08)';
+                                } else {
+                                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                                  e.currentTarget.style.boxShadow = '0 8px 16px rgba(255, 107, 53, 0.35), 0 3px 6px rgba(255, 107, 53, 0.25)';
+                                }
+                              }
+                            }}
+                          >
+                            <span style={{
+                              fontSize: '20px',
+                              filter: isSelected ? 'drop-shadow(0 2px 2px rgba(0,0,0,0.2))' : 'none',
+                              transition: 'transform 0.3s ease',
+                              display: 'inline-block'
+                            }}>
+                              {interest.icon}
+                            </span>
+                            <span style={{
+                              letterSpacing: '0.01em',
+                              textShadow: isSelected ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'
+                            }}>
+                              {interest.name}
+                            </span>
+                            {isSelected && (
+                              <span style={{
+                                marginLeft: '4px',
+                                fontSize: '16px',
+                                animation: 'checkmark 0.3s ease-in-out'
+                              }}>
+                                ✓
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </>
             )}
 
             <button
@@ -396,6 +632,7 @@ const AuthPage = () => {
                 <button
                   onClick={toggleMode}
                   disabled={isLoading}
+                  type="button"
                   style={{
                     background: 'none',
                     border: 'none',
