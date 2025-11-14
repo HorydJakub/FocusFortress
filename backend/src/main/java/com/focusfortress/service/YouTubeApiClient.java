@@ -1,6 +1,7 @@
 package com.focusfortress.service;
 
 import com.focusfortress.dto.VideoTileDTO;
+import com.focusfortress.exception.QuotaExceededException;
 import com.focusfortress.youtube.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,6 +50,11 @@ public class YouTubeApiClient {
                             clientResponse -> clientResponse.bodyToMono(String.class)
                                     .map(errorBody -> {
                                         log.error("YouTube API error response: {}", errorBody);
+                                        // Check if it's a quota exceeded error
+                                        if (errorBody.contains("quotaExceeded")) {
+                                            log.warn("YouTube API quota exceeded. Returning empty results gracefully.");
+                                            return new QuotaExceededException("YouTube API quota exceeded");
+                                        }
                                         return new RuntimeException("YouTube API error: " + errorBody);
                                     }))
                     .bodyToMono(YouTubeSearchResponse.class)
@@ -68,8 +74,11 @@ public class YouTubeApiClient {
             log.info("YouTube API returned {} videos for query '{}'", results.size(), query);
             return results;
 
+        } catch (QuotaExceededException e) {
+            log.warn("YouTube API quota exceeded for query '{}'. YouTube API daily quota limit has been reached.", query);
+            return Collections.emptyList();
         } catch (Exception e) {
-            log.error("Error calling YouTube API for query '{}': {}", query, e.getMessage(), e);
+            log.error("Error calling YouTube API for query '{}': {}", query, e.getMessage());
             // ry without category restriction
             log.info("Attempting fallback without category restriction for query: {}", query);
             return searchWithoutCategory(query, maxResults);
@@ -97,6 +106,10 @@ public class YouTubeApiClient {
                             clientResponse -> clientResponse.bodyToMono(String.class)
                                     .map(errorBody -> {
                                         log.error("YouTube API fallback error response: {}", errorBody);
+                                        if (errorBody.contains("quotaExceeded")) {
+                                            log.warn("YouTube API quota exceeded on fallback. Returning empty results.");
+                                            return new QuotaExceededException("YouTube API quota exceeded");
+                                        }
                                         return new RuntimeException("YouTube API error: " + errorBody);
                                     }))
                     .bodyToMono(YouTubeSearchResponse.class)
@@ -115,8 +128,11 @@ public class YouTubeApiClient {
             log.info("YouTube API fallback returned {} videos for query '{}'", results.size(), query);
             return results;
 
+        } catch (QuotaExceededException e) {
+            log.warn("YouTube API quota exceeded for fallback query '{}'. YouTube API daily quota limit has been reached.", query);
+            return Collections.emptyList();
         } catch (Exception e) {
-            log.error("Error calling YouTube API fallback for query '{}': {}", query, e.getMessage(), e);
+            log.error("Error calling YouTube API fallback for query '{}': {}", query, e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -203,4 +219,3 @@ public class YouTubeApiClient {
         return dto;
     }
 }
-
