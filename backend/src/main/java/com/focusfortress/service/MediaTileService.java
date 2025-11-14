@@ -121,4 +121,53 @@ public class MediaTileService {
         Collections.shuffle(allTiles);
         return allTiles.stream().limit(limit).collect(Collectors.toList());
     }
+
+    /**
+     * Get video tiles based on a specific list of subcategory names
+     * Used when users refresh recommendations with their selected interests
+     */
+    public List<VideoTileDTO> getTilesBySubcategories(String email, List<String> subcategoryNames, int limit) {
+        Set<String> userSubcategories = interestService.getUserSubcategoryNames(email);
+
+        List<VideoTileDTO> allTiles = new ArrayList<>();
+
+        if (subcategoryNames == null || subcategoryNames.isEmpty()) {
+            log.warn("No subcategories provided for custom tiles");
+            return Collections.emptyList();
+        }
+
+        // For each requested subcategory, get some videos
+        int videosPerSubcategory = Math.max(2, limit / subcategoryNames.size());
+
+        for (String subcategoryName : subcategoryNames) {
+            if (!userSubcategories.contains(subcategoryName)) {
+                log.warn("User {} requested tiles for interest they don't have: {}", email, subcategoryName);
+                continue;
+            }
+
+            List<String> queries = SUBCATEGORY_TO_QUERIES.getOrDefault(subcategoryName, List.of());
+            if (queries.isEmpty()) {
+                log.warn("No queries found for subcategory: {}", subcategoryName);
+                continue;
+            }
+
+            // Randomly select a query from this subcategory's queries
+            String randomQuery = queries.get(new Random().nextInt(queries.size()));
+
+            log.info("Fetching YouTube videos for subcategory {} with query '{}'", subcategoryName, randomQuery);
+
+            List<VideoTileDTO> tiles = youTubeApiClient.searchEducationalVideos(randomQuery, videosPerSubcategory);
+
+            // Tag with subcategory
+            tiles.forEach(tile -> {
+                tile.setMatchedInterest(subcategoryName);
+            });
+
+            allTiles.addAll(tiles);
+        }
+
+        // Shuffle for variety
+        Collections.shuffle(allTiles);
+        return allTiles.stream().limit(limit).collect(Collectors.toList());
+    }
 }
