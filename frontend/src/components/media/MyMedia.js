@@ -19,7 +19,8 @@ const MyMedia = () => {
   const [error, setError] = useState(null);
   const [refreshCount, setRefreshCount] = useState(0);
   const [refreshLimitReached, setRefreshLimitReached] = useState(false);
-  const MAX_DAILY_REFRESHES = 3;
+  const [showRefreshNotification, setShowRefreshNotification] = useState(false);
+  const MAX_DAILY_REFRESHES = 6;
 
   // Cache key for localStorage
   const RECOMMENDATIONS_CACHE_KEY = 'focusfortress_recommendations_cache';
@@ -32,6 +33,24 @@ const MyMedia = () => {
     fetchInterests();
     loadCachedRecommendations();
     loadRefreshCount();
+
+    // Listen for interest changes from Settings
+    const handleRefreshMediaTiles = () => {
+      console.log('Interests changed - showing notification to refresh');
+      fetchInterests(); // Refresh the interests chips
+      setShowRefreshNotification(true); // Show notification instead of auto-refreshing
+
+      // Auto-hide notification after 10 seconds
+      setTimeout(() => {
+        setShowRefreshNotification(false);
+      }, 10000);
+    };
+
+    window.addEventListener('refreshMediaTiles', handleRefreshMediaTiles);
+
+    return () => {
+      window.removeEventListener('refreshMediaTiles', handleRefreshMediaTiles);
+    };
   }, []);
 
   const getTodayDateString = () => {
@@ -347,6 +366,48 @@ const MyMedia = () => {
 
   return (
     <div style={{ padding: '80px 40px', maxWidth: '1400px', margin: '0 auto' }}>
+      {showRefreshNotification && (
+        <div style={{
+          position: 'fixed',
+          top: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          background: 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
+          color: 'white',
+          padding: '16px 24px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 16px rgba(255, 107, 53, 0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          animation: 'slideDown 0.3s ease-out',
+          maxWidth: '90%',
+          width: 'fit-content'
+        }}>
+          <RefreshCw size={20} />
+          <span style={{ fontWeight: '600', fontSize: '15px' }}>
+            Your interests have been updated! Click "Refresh Content" to see new recommendations.
+          </span>
+          <button
+            onClick={() => setShowRefreshNotification(false)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: 'none',
+              color: 'white',
+              padding: '4px 12px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 'bold',
+              marginLeft: '8px'
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       <div style={{ marginBottom: '40px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
           <Image size={36} color="#ff6b35" />
@@ -541,6 +602,16 @@ const MyMedia = () => {
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @keyframes slideDown {
+          from {
+            transform: translate(-50%, -20px);
+            opacity: 0;
+          }
+          to {
+            transform: translate(-50%, 0);
+            opacity: 1;
+          }
         }
       `}</style>
     </div>

@@ -261,6 +261,72 @@ public class InterestService {
         return getUserInterests(email);
     }
 
+    @Transactional
+    public UserInterestDTO addCustomInterest(String email, String name, String emoji) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        // Find or create a "Custom" category for user-defined interests
+        Category customCategory = categoryRepository.findByName("Custom")
+                .orElseGet(() -> {
+                    Category newCategory = Category.builder()
+                            .name("Custom")
+                            .icon("✨")
+                            .build();
+                    return categoryRepository.save(newCategory);
+                });
+
+        // Create the custom subcategory with the provided emoji
+        Subcategory customSubcategory = Subcategory.builder()
+                .name(name)
+                .icon(emoji)
+                .category(customCategory)
+                .build();
+        customSubcategory = subcategoryRepository.save(customSubcategory);
+
+        // Create user interest
+        UserInterest userInterest = UserInterest.builder()
+                .user(user)
+                .subcategory(customSubcategory)
+                .build();
+        userInterest = userInterestRepository.save(userInterest);
+
+        log.info("Added custom interest '{}' for user {}", name, email);
+
+        return UserInterestDTO.fromEntity(userInterest);
+    }
+
+    @Transactional
+    public void deleteUserInterest(String email, Long interestId) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        UserInterest userInterest = userInterestRepository.findById(interestId)
+                .orElseThrow(() -> new IllegalArgumentException("Interest not found"));
+
+        // Verify the interest belongs to the user
+        if (!userInterest.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("Interest does not belong to the current user");
+        }
+
+        // Check if it's a custom interest (from Custom category)
+        boolean isCustom = userInterest.getSubcategory().getCategory().getName().equals("Custom");
+
+        // Delete the user interest
+        userInterestRepository.delete(userInterest);
+
+        // If it's a custom interest, also delete the subcategory since it's user-specific
+        if (isCustom) {
+            Subcategory customSubcategory = userInterest.getSubcategory();
+            subcategoryRepository.delete(customSubcategory);
+            log.info("Deleted custom interest '{}' and its subcategory for user {}",
+                    customSubcategory.getName(), email);
+        } else {
+            log.info("Removed interest '{}' for user {}",
+                    userInterest.getSubcategory().getName(), email);
+        }
+    }
+
     private static class SubcategoryInfo {
         String subcategoryName;
         String subcategoryIcon;

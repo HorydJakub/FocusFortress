@@ -64,8 +64,18 @@ public class MediaTileService {
         int videosPerSubcategory = Math.max(2, limit / userSubcategories.size());
 
         for (String subcategoryName : userSubcategories) {
-            List<String> queries = SUBCATEGORY_TO_QUERIES.getOrDefault(subcategoryName, List.of());
-            if (queries.isEmpty()) continue;
+            List<String> queries = SUBCATEGORY_TO_QUERIES.getOrDefault(subcategoryName, null);
+
+            // If no predefined queries exist, it's likely a custom interest - generate queries dynamically
+            if (queries == null || queries.isEmpty()) {
+                log.info("No predefined queries for '{}' - generating custom queries", subcategoryName);
+                queries = generateCustomQueries(subcategoryName);
+            }
+
+            if (queries.isEmpty()) {
+                log.warn("Could not generate queries for subcategory: {}", subcategoryName);
+                continue;
+            }
 
             // Randomly select a query from this subcategory's queries
             String randomQuery = queries.get(new Random().nextInt(queries.size()));
@@ -122,10 +132,6 @@ public class MediaTileService {
         return allTiles.stream().limit(limit).collect(Collectors.toList());
     }
 
-    /**
-     * Get video tiles based on a specific list of subcategory names
-     * Used when users refresh recommendations with their selected interests
-     */
     public List<VideoTileDTO> getTilesBySubcategories(String email, List<String> subcategoryNames, int limit) {
         Set<String> userSubcategories = interestService.getUserSubcategoryNames(email);
 
@@ -145,9 +151,16 @@ public class MediaTileService {
                 continue;
             }
 
-            List<String> queries = SUBCATEGORY_TO_QUERIES.getOrDefault(subcategoryName, List.of());
+            List<String> queries = SUBCATEGORY_TO_QUERIES.getOrDefault(subcategoryName, null);
+
+            // If no predefined queries exist, it's likely a custom interest - generate queries dynamically
+            if (queries == null || queries.isEmpty()) {
+                log.info("No predefined queries for '{}' - generating custom queries", subcategoryName);
+                queries = generateCustomQueries(subcategoryName);
+            }
+
             if (queries.isEmpty()) {
-                log.warn("No queries found for subcategory: {}", subcategoryName);
+                log.warn("No queries could be generated for subcategory: {}", subcategoryName);
                 continue;
             }
 
@@ -169,5 +182,21 @@ public class MediaTileService {
         // Shuffle for variety
         Collections.shuffle(allTiles);
         return allTiles.stream().limit(limit).collect(Collectors.toList());
+    }
+
+    private List<String> generateCustomQueries(String subcategoryName) {
+        List<String> queries = new ArrayList<>();
+
+        // Add the subcategory name as-is
+        queries.add(subcategoryName);
+
+        // Add educational variations
+        queries.add(subcategoryName + " explained");
+        queries.add(subcategoryName + " tutorial");
+        queries.add("Learn " + subcategoryName);
+        queries.add(subcategoryName + " for beginners");
+        queries.add(subcategoryName + " guide");
+
+        return queries;
     }
 }

@@ -1,5 +1,6 @@
 package com.focusfortress.controller;
 
+import com.focusfortress.dto.CustomInterestDTO;
 import com.focusfortress.dto.ManageInterestsDTO;
 import com.focusfortress.dto.UserInterestDTO;
 import com.focusfortress.service.InterestService;
@@ -34,5 +35,25 @@ public class UserInterestController {
 
         List<UserInterestDTO> updated = interestService.manageUserInterests(principal.getName(), dto);
         return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/custom")
+    public ResponseEntity<UserInterestDTO> addCustomInterest(
+            @Valid @RequestBody CustomInterestDTO dto,
+            Principal principal) {
+        UserInterestDTO created = interestService.addCustomInterest(
+                principal.getName(),
+                dto.getName(),
+                dto.getEmoji()
+        );
+        return ResponseEntity.ok(created);
+    }
+
+    @DeleteMapping("/{interestId}")
+    public ResponseEntity<Void> deleteInterest(
+            @PathVariable("interestId") Long interestId,
+            Principal principal) {
+        interestService.deleteUserInterest(principal.getName(), interestId);
+        return ResponseEntity.noContent().build();
     }
 }

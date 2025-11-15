@@ -46,6 +46,62 @@ const authService = {
     } catch (error) {
       throw error.response?.data?.message || 'Verification failed';
     }
+  },
+
+  // User Profile Management
+  getUserProfile: async () => {
+    try {
+      const response = await api.get('/user/profile');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || 'Failed to fetch profile';
+    }
+  },
+
+  updateUserProfile: async (profileData) => {
+    try {
+      const response = await api.put('/user/profile', profileData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || 'Failed to update profile';
+    }
+  },
+
+  // User Interests Management
+  getUserInterests: async () => {
+    try {
+      const response = await api.get('/user/interests');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || 'Failed to fetch interests';
+    }
+  },
+
+  manageUserInterests: async (interestsData) => {
+    try {
+      const response = await api.put('/user/interests', interestsData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || 'Failed to update interests';
+    }
+  },
+
+  addCustomInterest: async (customInterestData) => {
+    try {
+      const response = await api.post('/user/interests/custom', customInterestData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || 'Failed to add custom interest';
+    }
+  },
+
+  deleteCustomInterest: async (interestId) => {
+    try {
+      const response = await api.delete(`/user/interests/${interestId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || 'Failed to delete custom interest';
+    }
   }
 };
 

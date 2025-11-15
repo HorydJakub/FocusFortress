@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Home, Target, Clock, Image, LogOut } from 'lucide-react';
+import Settings from '../settings/Settings';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -94,14 +96,28 @@ const Layout = ({ children }) => {
 
         {/* User Menu */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '8px 16px',
-            background: '#f8f8f8',
-            borderRadius: '12px'
-          }}>
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '8px 16px',
+              background: '#f8f8f8',
+              borderRadius: '12px',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#e8e8e8';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#f8f8f8';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
             <div style={{
               width: '36px',
               height: '36px',
@@ -119,7 +135,7 @@ const Layout = ({ children }) => {
             <span style={{ fontWeight: '600', color: '#333' }}>
               {user ? user.split('@')[0] : 'User'}
             </span>
-          </div>
+          </button>
 
           <button
             onClick={handleLogout}
@@ -154,6 +170,9 @@ const Layout = ({ children }) => {
 
       {/* Main Content */}
       {children}
+
+      {/* Settings Modal */}
+      <Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 };
