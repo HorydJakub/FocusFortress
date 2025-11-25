@@ -1,0 +1,32 @@
+@startuml FocusFortress-API-Components
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - FocusFortress API Application
+
+Container(spa, "Web Application", "React SPA", "Delivers content to user's web browser")
+ContainerDb(db, "Database", "MySQL", "Stores user data, habits, counters, interests")
+System_Ext(youtube, "YouTube Data API v3", "Provides video search")
+
+Container_Boundary(api, "API Application") {
+    Component(security, "Security Filter", "Spring Security + JWT Filter", "Intercepts requests and validates JWT tokens")
+    Component(controllers, "REST Controllers", "Spring MVC Controllers", "Handles HTTP requests and returns JSON responses")
+    Component(services, "Business Services", "Spring Services", "Executes business logic and coordinates operations")
+    Component(youtube_client, "YouTube Client", "WebClient", "Searches videos via YouTube API")
+    Component(email, "Email Service", "JavaMailSender", "Sends verification emails via SMTP")
+    Component(repos, "Repositories", "Spring Data JPA", "Executes database queries")
+    Component(config, "Configuration", "Spring @Configuration", "Configures security, CORS, and application settings")
+}
+
+Rel(spa, security, "Sends HTTP requests to", "JSON/HTTPS")
+Rel(security, controllers, "Forwards authenticated requests to", "HTTP")
+Rel(security, config, "Reads configuration from", "Dependency Injection")
+Rel(controllers, services, "Delegates business logic to", "Method calls with DTOs")
+Rel(services, youtube_client, "Fetches video recommendations from", "Method calls")
+Rel(services, email, "Sends verification emails via", "Method calls")
+Rel(services, repos, "Reads and writes entities via", "Method calls with JPA entities")
+Rel(repos, db, "Executes SQL queries on", "JDBC")
+Rel(youtube_client, youtube, "Getting matching videos via", "HTTPS/JSON")
+
+@enduml

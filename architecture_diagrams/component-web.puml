@@ -1,0 +1,26 @@
+@startuml FocusFortress-Web-Components
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - FocusFortress Web Application
+
+Person(user, "User", "A person who wants to build and track healthy habits")
+Container(api, "API Application", "Spring Boot", "Provides REST API")
+
+Container_Boundary(web_app, "Web Application") {
+    Component(routing, "Routing & Navigation", "React Router", "Manages application routes and navigation between pages")
+    Component(auth, "Authentication Module", "React Context + Service", "Manages user authentication state and JWT tokens")
+    Component(pages, "Page Components", "React Components", "Renders main application pages (Dashboard, Habits, Counters, Media)")
+    Component(api_client, "API Client", "Axios", "Sends HTTP requests with JWT authentication")
+}
+
+Rel(user, pages, "Interacts with", "HTTPS")
+Rel(routing, auth, "Checks authentication via", "React Context")
+Rel(routing, pages, "Renders pages via", "React props")
+Rel(pages, auth, "Gets user state from", "React Context")
+Rel(pages, api_client, "Fetches data via", "Function calls")
+Rel(auth, api_client, "Authenticates via", "Function calls")
+Rel(api_client, api, "Sends HTTP requests to", "JSON/HTTPS")
+
+@enduml
