@@ -1,0 +1,25 @@
+@startuml FocusFortress-Containers
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title System Container Diagram - FocusFortress
+
+Person(user, "User", "A person who wants to build and track healthy habits")
+
+System_Boundary(focusfortress, "FocusFortress") {
+    Container(web_app, "Web Application", "React SPA", "Provides habit tracking, counter management, and personalized media discovery functionality via user's web browser")
+
+    Container(api, "API Application", "Spring Boot, Java", "Provides REST API for habit tracking, user management, interest management, and video recommendations")
+
+    ContainerDb(database, "Database", "MySQL", "Stores user accounts, habits, counters, progress tracking, interests, and media library")
+}
+
+System_Ext(youtube, "YouTube Data API v3", "Provides video search and metadata for educational content")
+
+Rel(user, web_app, "Uses to manage habits, counters, media", "HTTPS")
+Rel(web_app, api, "Makes API calls to", "JSON/HTTPS")
+Rel(api, database, "Reads from and writes to", "JDBC")
+Rel(api, youtube, "Fetches video recommendations", "HTTPS/JSON")
+
+@enduml

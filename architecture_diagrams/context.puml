@@ -1,0 +1,18 @@
+@startuml System Context - FocusFortress
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+
+title Context Diagram - FocusFortress
+
+Person(user, "User", "A person who wants to develop good habits, track interests, and access educational content")
+
+System(focusfortress, "FocusFortress", "Allows users to create and track habits, manage counters and discover personalized educational video content")
+
+System_Ext(youtube, "YouTube Data API v3", "Provides video search and metadata for personalized educational content recommendations")
+
+Rel(user, focusfortress, "Uses to track habits, counters and discover content", "HTTPS")
+Rel(focusfortress, youtube, "Fetches video recommendations and metadata", "HTTPS/JSON")
+
+@enduml

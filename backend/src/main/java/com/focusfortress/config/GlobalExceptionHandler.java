@@ -1,4 +1,4 @@
-package com.focusfortress.api;
+package com.focusfortress.config;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
