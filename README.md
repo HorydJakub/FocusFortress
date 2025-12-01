@@ -10,34 +10,30 @@ A comprehensive productivity and habit-tracking application built with Spring Bo
 ## 📸 Screenshots
 
 ### Authentication
-<!-- Add screenshot of login/register page here -->
-![Login Page](screenshots/login.png)
-*Secure authentication with "Remember Me" functionality*
+![Login Page](media_library/login_page.png)
+
+### Registration Page
+![Register Page](media_library/register.png)
 
 ### Dashboard
-<!-- Add screenshot of main dashboard here -->
-![Dashboard](screenshots/dashboard.png)
+![Dashboard](media_library/dashboard.png)
 *Main dashboard overview with quick access to all features*
 
 ### Habit Tracking
-<!-- Add screenshot of habits page here -->
-![Habits](screenshots/habits.png)
+![Habits](media_library/my_habits.png)
 *Track your habits and sync with Google Calendar*
 
 ### Counter Management
-<!-- Add screenshot of counters page here -->
-![Counters](screenshots/counters.png)
+![Counters](media_library/counters.png)
 *Manage multiple counters for various activities*
 
-### Media Library
-<!-- Add screenshot of media library here -->
-![Media Library](screenshots/media-library.png)
-*Personalized YouTube content based on your interests*
+### Media Library: My Media
+![My Media](media_library/my_media.png)
+*Your personalized collection of saved YouTube videos*
 
-### User Profile & Settings
-<!-- Add screenshot of profile/settings page here -->
-![Settings](screenshots/settings.png)
-*Customize your profile and manage application settings*
+### Media Library: Discover Personalized Content
+![Media Library](media_library/discover_edu_media.png)
+*Personalized YouTube content based on your interests*
 
 ## ✨ Features
 
