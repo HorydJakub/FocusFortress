@@ -7,34 +7,6 @@ A comprehensive productivity and habit-tracking application built with Spring Bo
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.2-brightgreen.svg)
 ![React](https://img.shields.io/badge/React-18.2.0-blue.svg)
 
-## 📸 Screenshots
-
-### Authentication
-![Login Page](media_library/login_page.png)
-
-### Registration Page
-![Register Page](media_library/register.png)
-
-### Dashboard
-![Dashboard](media_library/dashboard.png)
-*Main dashboard overview with quick access to all features*
-
-### Habit Tracking
-![Habits](media_library/my_habits.png)
-*Track your habits and sync with Google Calendar*
-
-### Counter Management
-![Counters](media_library/counters.png)
-*Manage multiple counters for various activities*
-
-### Media Library: My Media
-![My Media](media_library/my_media.png)
-*Your personalized collection of saved YouTube videos*
-
-### Media Library: Discover Personalized Content
-![Media Library](media_library/discover_edu_media.png)
-*Personalized YouTube content based on your interests*
-
 ## ✨ Features
 
 
@@ -189,6 +161,34 @@ FocusFortress/
 ├── architecture_diagrams/    # C4 model diagrams
 └── pom.xml
 ```
+
+## 📸 Screenshots
+
+### Authentication
+![Login Page](media_library/login_page.png)
+
+### Registration Page
+![Register Page](media_library/register.png)
+
+### Dashboard
+![Dashboard](media_library/dashboard.png)
+*Main dashboard overview with quick access to all features*
+
+### Habit Tracking
+![Habits](media_library/my_habits.png)
+*Track your habits and sync with Google Calendar*
+
+### Counter Management
+![Counters](media_library/counters.png)
+*Manage multiple counters for various activities*
+
+### Media Library: My Media
+![My Media](media_library/my_media.png)
+*Your personalized collection of saved YouTube videos*
+
+### Media Library: Discover Personalized Content
+![Media Library](media_library/discover_edu_media.png)
+*Personalized YouTube content based on your interests*
 
 ## 🔑 API Endpoints
 
