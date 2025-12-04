@@ -43,7 +43,12 @@ const Settings = ({ isOpen, onClose }) => {
   const fetchUserProfile = async () => {
     try {
       const profile = await authService.getUserProfile();
-      setProfileData(profile);
+      setProfileData({
+        name: profile.name || '',
+        email: profile.email || '',
+        dateOfBirth: profile.dateOfBirth || '',
+        gender: profile.gender || ''
+      });
       setMessage('');
     } catch (error) {
       console.error('Failed to fetch profile:', error);
@@ -114,9 +119,6 @@ const Settings = ({ isOpen, onClose }) => {
     if (!profileData.email || !profileData.email.includes('@')) {
       newErrors.email = 'Valid email is required';
     }
-    if (!profileData.dateOfBirth) {
-      newErrors.dateOfBirth = 'Date of birth is required';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -133,7 +135,9 @@ const Settings = ({ isOpen, onClose }) => {
     setIsLoading(true);
     try {
       await authService.updateUserProfile(profileData);
-      setMessage('Profile updated successfully!');
+      setMessage('✅ Profile updated successfully!');
+      window.dispatchEvent(new Event('profileUpdated'));
+
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       setMessage(error || 'Failed to update profile');
@@ -444,6 +448,7 @@ const Settings = ({ isOpen, onClose }) => {
                   value={profileData.email}
                   onChange={handleProfileChange}
                   disabled={isLoading}
+                  readOnly
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -452,11 +457,10 @@ const Settings = ({ isOpen, onClose }) => {
                     border: `2px solid ${errors.email ? '#dc3545' : '#e0e0e0'}`,
                     outline: 'none',
                     transition: 'border-color 0.2s',
-                    opacity: isLoading ? 0.6 : 1,
+                    opacity: 0.7,
+                    backgroundColor: '#f9f9f9',
                     boxSizing: 'border-box'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
-                  onBlur={(e) => e.target.style.borderColor = errors.email ? '#dc3545' : '#e0e0e0'}
                 />
                 {errors.email && <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.email}</div>}
               </div>
@@ -468,7 +472,7 @@ const Settings = ({ isOpen, onClose }) => {
                 <input
                   type="date"
                   name="dateOfBirth"
-                  value={profileData.dateOfBirth}
+                  value={profileData.dateOfBirth || ''}
                   onChange={handleProfileChange}
                   disabled={isLoading}
                   style={{
@@ -564,8 +568,6 @@ const Settings = ({ isOpen, onClose }) => {
               <div style={{
                 background: totalSelected >= MAX_TOTAL_INTERESTS
                   ? 'linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%)'
-                  : totalSelected >= minRequired
-                  ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)'
                   : 'linear-gradient(135deg, #ffb366 0%, #ff8c42 100%)',
                 color: 'white',
                 padding: '16px 20px',
@@ -578,7 +580,7 @@ const Settings = ({ isOpen, onClose }) => {
                     Total Interests: {totalSelected} / {MAX_TOTAL_INTERESTS}
                   </span>
                   <span style={{ fontSize: '32px' }}>
-                    {totalSelected >= MAX_TOTAL_INTERESTS ? '🔒' : totalSelected >= minRequired ? '✅' : '⏳'}
+                    {totalSelected >= MAX_TOTAL_INTERESTS ? '🔒' : '✨'}
                   </span>
                 </div>
                 <div style={{ fontSize: '13px', opacity: 0.95, display: 'flex', gap: '16px' }}>

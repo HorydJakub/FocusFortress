@@ -7,6 +7,8 @@ import Counters from './components/counters/Counters';
 import Habits from './components/habits/Habits';
 import MyMedia from './components/media/MyMedia';
 import Layout from './components/layout/Layout';
+import OAuth2RedirectHandler from './components/auth/OAuth2RedirectHandler';
+import OnboardingPage from './components/auth/OnboardingPage';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -20,6 +22,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<AuthPage />} />
+          <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+          <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
           <Route path="/counters" element={<ProtectedRoute><Layout><Counters /></Layout></ProtectedRoute>} />
           <Route path="/habits" element={<ProtectedRoute><Layout><Habits /></Layout></ProtectedRoute>} />

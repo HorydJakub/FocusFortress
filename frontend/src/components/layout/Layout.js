@@ -1,14 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Home, Target, Clock, Image, LogOut } from 'lucide-react';
 import Settings from '../settings/Settings';
+import api from '../../services/api'; // Import API to fetch the real user name
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [displayName, setDisplayName] = useState(''); // State to hold the real name from DB
+
+  // Function to fetch the user's name from the backend
+  const fetchUserName = async () => {
+    try {
+      if (user) {
+        const response = await api.get('/user/profile');
+        if (response.data && response.data.name) {
+          setDisplayName(response.data.name);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch user name", error);
+    }
+  };
+
+  useEffect(() => {
+    // 1. Fetch name on component mount
+    fetchUserName();
+
+    // 2. Listen for 'profileUpdated' event triggered by Settings.js
+    // This ensures the name updates immediately after editing
+    const handleProfileUpdate = () => fetchUserName();
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+
+    // Cleanup listener
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -130,10 +161,10 @@ const Layout = ({ children }) => {
               fontWeight: 'bold',
               fontSize: '16px'
             }}>
-              {user ? user.charAt(0).toUpperCase() : 'U'}
+              {displayName ? displayName.charAt(0).toUpperCase() : (user ? user.charAt(0).toUpperCase() : 'U')}
             </div>
             <span style={{ fontWeight: '600', color: '#333' }}>
-              {user ? user.split('@')[0] : 'User'}
+              {displayName || (user ? user.split('@')[0] : 'User')}
             </span>
           </button>
 

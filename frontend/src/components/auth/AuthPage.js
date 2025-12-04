@@ -22,7 +22,7 @@ const AuthPage = () => {
   const { login, register } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch available interests when component mounts
+  // Fetch available interests when component mounts (only needed for registration)
   useEffect(() => {
     const fetchInterests = async () => {
       try {
@@ -100,9 +100,6 @@ const AuthPage = () => {
       if (!formData.name || formData.name.length < 2) {
         newErrors.name = 'Name must be at least 2 characters';
       }
-      if (!formData.dateOfBirth) {
-        newErrors.dateOfBirth = 'Date of birth is required';
-      }
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = 'Passwords do not match';
       }
@@ -143,7 +140,7 @@ const AuthPage = () => {
         await register({
           name: formData.name,
           email: formData.email,
-          dateOfBirth: formData.dateOfBirth,
+          dateOfBirth: formData.dateOfBirth || null,
           gender: formData.gender || null,
           password: formData.password,
           confirmPassword: formData.confirmPassword,
@@ -247,384 +244,423 @@ const AuthPage = () => {
               </p>
             </div>
 
-            {!isLogin && (
+            <form onSubmit={handleSubmit}>
+              {!isLogin && (
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Enter your name"
+                    disabled={isLoading}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '16px',
+                      borderRadius: '12px',
+                      border: `2px solid ${errors.name ? '#dc3545' : '#e0e0e0'}`,
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      opacity: isLoading ? 0.6 : 1,
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                    onBlur={(e) => e.target.style.borderColor = errors.name ? '#dc3545' : '#e0e0e0'}
+                  />
+                  {errors.name && <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.name}</div>}
+                </div>
+              )}
+
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
-                  Name
+                  Email
                 </label>
                 <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
+                  type="email"
+                  name="email"
+                  value={formData.email}
                   onChange={handleChange}
-                  placeholder="Enter your name"
+                  placeholder="Enter your email"
                   disabled={isLoading}
                   style={{
                     width: '100%',
                     padding: '12px 16px',
                     fontSize: '16px',
                     borderRadius: '12px',
-                    border: `2px solid ${errors.name ? '#dc3545' : '#e0e0e0'}`,
+                    border: `2px solid ${errors.email ? '#dc3545' : '#e0e0e0'}`,
                     outline: 'none',
                     transition: 'border-color 0.2s',
                     opacity: isLoading ? 0.6 : 1,
                     boxSizing: 'border-box'
                   }}
                   onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
-                  onBlur={(e) => e.target.style.borderColor = errors.name ? '#dc3545' : '#e0e0e0'}
+                  onBlur={(e) => e.target.style.borderColor = errors.email ? '#dc3545' : '#e0e0e0'}
                 />
-                {errors.name && <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.name}</div>}
+                {errors.email && <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.email}</div>}
               </div>
-            )}
 
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter your email"
-                disabled={isLoading}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  fontSize: '16px',
-                  borderRadius: '12px',
-                  border: `2px solid ${errors.email ? '#dc3545' : '#e0e0e0'}`,
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                  opacity: isLoading ? 0.6 : 1,
-                  boxSizing: 'border-box'
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
-                onBlur={(e) => e.target.style.borderColor = errors.email ? '#dc3545' : '#e0e0e0'}
-              />
-              {errors.email && <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.email}</div>}
-            </div>
-
-            {!isLogin && (
-              <>
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
-                    Date of Birth
-                  </label>
-                  <input
-                    type="date"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '16px',
-                      borderRadius: '12px',
-                      border: `2px solid ${errors.dateOfBirth ? '#dc3545' : '#e0e0e0'}`,
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      opacity: isLoading ? 0.6 : 1,
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
-                    onBlur={(e) => e.target.style.borderColor = errors.dateOfBirth ? '#dc3545' : '#e0e0e0'}
-                  />
-                  {errors.dateOfBirth && <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.dateOfBirth}</div>}
-                </div>
-
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
-                    Gender
-                  </label>
-                  <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '16px',
-                      borderRadius: '12px',
-                      border: '2px solid #e0e0e0',
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      backgroundColor: 'white',
-                      opacity: isLoading ? 0.6 : 1,
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
-                    onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-                  >
-                    <option value="">Select gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Prefer not to specify">Prefer not to specify</option>
-                  </select>
-                </div>
-              </>
-            )}
-
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
-                Password
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter your password"
-                disabled={isLoading}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  fontSize: '16px',
-                  borderRadius: '12px',
-                  border: `2px solid ${errors.password ? '#dc3545' : '#e0e0e0'}`,
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                  opacity: isLoading ? 0.6 : 1,
-                  boxSizing: 'border-box'
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
-                onBlur={(e) => e.target.style.borderColor = errors.password ? '#dc3545' : '#e0e0e0'}
-              />
-              {errors.password && <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.password}</div>}
-            </div>
-
-            {!isLogin && (
-              <>
-                <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
-                    Confirm Password
-                  </label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm your password"
-                    disabled={isLoading}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '16px',
-                      borderRadius: '12px',
-                      border: `2px solid ${errors.confirmPassword ? '#dc3545' : '#e0e0e0'}`,
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      opacity: isLoading ? 0.6 : 1,
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
-                    onBlur={(e) => e.target.style.borderColor = errors.confirmPassword ? '#dc3545' : '#e0e0e0'}
-                  />
-                  {errors.confirmPassword && <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.confirmPassword}</div>}
-                </div>
-
-                {/* INTERESTS SECTION */}
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <label style={{ fontWeight: '600', color: '#333', margin: 0, fontSize: '15px' }}>
-                      Select Your Interests
+              {!isLogin && (
+                <>
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
+                      Date of Birth <span style={{ fontWeight: 'normal', color: '#999', fontSize: '14px' }}>(Optional)</span>
                     </label>
-                    <div style={{
-                      fontSize: '15px',
-                      fontWeight: '700',
-                      color: selectedCount >= minRequired ? '#4caf50' : '#ff9800',
-                      background: selectedCount >= minRequired
-                        ? 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)'
-                        : 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)',
-                      padding: '4px 12px',
-                      borderRadius: '12px',
-                      border: `2px solid ${selectedCount >= minRequired ? '#4caf50' : '#ff9800'}`
-                    }}>
-                      {selectedCount} / {maxAllowed}
-                    </div>
-                  </div>
-
-                  <div style={{
-                    fontSize: '13px',
-                    color: '#666',
-                    marginBottom: '16px',
-                    fontStyle: 'italic'
-                  }}>
-                    {selectedCount < minRequired
-                      ? `Choose at least ${minRequired - selectedCount} more topic${minRequired - selectedCount > 1 ? 's' : ''} to continue`
-                      : selectedCount === maxAllowed
-                      ? '✓ Perfect selection!'
-                      : `Great! You can pick ${maxAllowed - selectedCount} more`}
-                  </div>
-
-                  {errors.interests && (
-                    <div style={{
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      marginBottom: '12px',
-                      backgroundColor: '#fee',
-                      color: '#c33',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      border: '2px solid #fcc'
-                    }}>
-                      ⚠️ {errors.interests}
-                    </div>
-                  )}
-
-                  {/* Interest Bubbles */}
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '12px',
-                    maxHeight: '320px',
-                    overflowY: 'auto',
-                    padding: '16px',
-                    border: `2px solid ${errors.interests ? '#fcc' : '#e8e8e8'}`,
-                    borderRadius: '16px',
-                    background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
-                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
-                  }}>
-                    {availableInterests.length === 0 ? (
-                      <div style={{
+                    <input
+                      type="date"
+                      name="dateOfBirth"
+                      value={formData.dateOfBirth}
+                      onChange={handleChange}
+                      disabled={isLoading}
+                      style={{
                         width: '100%',
-                        textAlign: 'center',
-                        padding: '30px 20px',
-                        color: '#999',
-                        fontSize: '14px'
-                      }}>
-                        <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔄</div>
-                        Loading interests...
-                      </div>
-                    ) : (
-                      availableInterests.map((interest) => {
-                        const isSelected = formData.selectedInterests.includes(interest.name);
-
-                        return (
-                          <button
-                            key={interest.name}
-                            onClick={() => toggleInterest(interest.name)}
-                            disabled={isLoading}
-                            type="button"
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              padding: '12px 18px',
-                              border: `2px solid ${isSelected ? '#ff6b35' : 'transparent'}`,
-                              borderRadius: '24px',
-                              background: isSelected
-                                ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)'
-                                : 'white',
-                              color: isSelected ? 'white' : '#333',
-                              fontSize: '14.5px',
-                              fontWeight: isSelected ? '600' : '500',
-                              cursor: isLoading ? 'not-allowed' : 'pointer',
-                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                              opacity: isLoading ? 0.6 : 1,
-                              boxShadow: isSelected
-                                ? '0 8px 16px rgba(255, 107, 53, 0.35), 0 3px 6px rgba(255, 107, 53, 0.25)'
-                                : '0 2px 4px rgba(0,0,0,0.08)',
-                              transform: isSelected ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!isLoading) {
-                                if (!isSelected) {
-                                  e.currentTarget.style.borderColor = '#ff6b35';
-                                  e.currentTarget.style.background = 'linear-gradient(135deg, #fff5eb 0%, #ffe8d6 100%)';
-                                  e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
-                                  e.currentTarget.style.boxShadow = '0 6px 12px rgba(255, 107, 53, 0.2)';
-                                } else {
-                                  e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
-                                  e.currentTarget.style.boxShadow = '0 12px 24px rgba(255, 107, 53, 0.4), 0 6px 12px rgba(255, 107, 53, 0.3)';
-                                }
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isLoading) {
-                                if (!isSelected) {
-                                  e.currentTarget.style.borderColor = 'transparent';
-                                  e.currentTarget.style.background = 'white';
-                                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.08)';
-                                } else {
-                                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                                  e.currentTarget.style.boxShadow = '0 8px 16px rgba(255, 107, 53, 0.35), 0 3px 6px rgba(255, 107, 53, 0.25)';
-                                }
-                              }
-                            }}
-                          >
-                            <span style={{
-                              fontSize: '20px',
-                              filter: isSelected ? 'drop-shadow(0 2px 2px rgba(0,0,0,0.2))' : 'none',
-                              transition: 'transform 0.3s ease',
-                              display: 'inline-block'
-                            }}>
-                              {interest.icon}
-                            </span>
-                            <span style={{
-                              letterSpacing: '0.01em',
-                              textShadow: isSelected ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'
-                            }}>
-                              {interest.name}
-                            </span>
-                            {isSelected && (
-                              <span style={{
-                                marginLeft: '4px',
-                                fontSize: '16px',
-                                animation: 'checkmark 0.3s ease-in-out'
-                              }}>
-                                ✓
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })
-                    )}
+                        padding: '12px 16px',
+                        fontSize: '16px',
+                        borderRadius: '12px',
+                        border: `2px solid ${errors.dateOfBirth ? '#dc3545' : '#e0e0e0'}`,
+                        outline: 'none',
+                        transition: 'border-color 0.2s',
+                        opacity: isLoading ? 0.6 : 1,
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                      onBlur={(e) => e.target.style.borderColor = errors.dateOfBirth ? '#dc3545' : '#e0e0e0'}
+                    />
                   </div>
-                </div>
-              </>
-            )}
 
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              style={{
-                width: '100%',
-                padding: '14px',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                color: 'white',
-                background: isLoading ? '#ccc' : 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
-                border: '2px solid transparent',
-                borderRadius: '12px',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: isLoading ? 'none' : '0 4px 12px rgba(255, 107, 53, 0.3)',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                opacity: isLoading ? 0.6 : 1,
-                boxSizing: 'border-box'
-              }}
-              onMouseEnter={(e) => {
-                if (!isLoading) {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 107, 53, 0.4)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isLoading) {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 107, 53, 0.3)';
-                }
-              }}
-            >
-              {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Create Account')}
-              {!isLoading && <ChevronRight size={20} style={{ marginLeft: '8px' }} />}
-            </button>
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
+                      Gender <span style={{ fontWeight: 'normal', color: '#999', fontSize: '14px' }}>(Optional)</span>
+                    </label>
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      disabled={isLoading}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        fontSize: '16px',
+                        borderRadius: '12px',
+                        border: '2px solid #e0e0e0',
+                        outline: 'none',
+                        transition: 'border-color 0.2s',
+                        backgroundColor: 'white',
+                        opacity: isLoading ? 0.6 : 1,
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                      onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+                    >
+                      <option value="">Select gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Prefer not to specify">Prefer not to specify</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Enter your password"
+                  disabled={isLoading}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontSize: '16px',
+                    borderRadius: '12px',
+                    border: `2px solid ${errors.password ? '#dc3545' : '#e0e0e0'}`,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    opacity: isLoading ? 0.6 : 1,
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                  onBlur={(e) => e.target.style.borderColor = errors.password ? '#dc3545' : '#e0e0e0'}
+                />
+                {errors.password && <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.password}</div>}
+              </div>
+
+              {!isLogin && (
+                <>
+                  <div style={{ marginBottom: '24px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
+                      Confirm Password
+                    </label>
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="Confirm your password"
+                      disabled={isLoading}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        fontSize: '16px',
+                        borderRadius: '12px',
+                        border: `2px solid ${errors.confirmPassword ? '#dc3545' : '#e0e0e0'}`,
+                        outline: 'none',
+                        transition: 'border-color 0.2s',
+                        opacity: isLoading ? 0.6 : 1,
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                      onBlur={(e) => e.target.style.borderColor = errors.confirmPassword ? '#dc3545' : '#e0e0e0'}
+                    />
+                    {errors.confirmPassword && <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '4px' }}>{errors.confirmPassword}</div>}
+                  </div>
+
+                  {/* INTERESTS SECTION */}
+                  <div style={{ marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <label style={{ fontWeight: '600', color: '#333', margin: 0, fontSize: '15px' }}>
+                        Select Your Interests
+                      </label>
+                      <div style={{
+                        fontSize: '15px',
+                        fontWeight: '700',
+                        color: selectedCount >= minRequired ? '#4caf50' : '#ff9800',
+                        background: selectedCount >= minRequired
+                          ? 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)'
+                          : 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)',
+                        padding: '4px 12px',
+                        borderRadius: '12px',
+                        border: `2px solid ${selectedCount >= minRequired ? '#4caf50' : '#ff9800'}`
+                      }}>
+                        {selectedCount} / {maxAllowed}
+                      </div>
+                    </div>
+
+                    <div style={{
+                      fontSize: '13px',
+                      color: '#666',
+                      marginBottom: '16px',
+                      fontStyle: 'italic'
+                    }}>
+                      {selectedCount < minRequired
+                        ? `Choose at least ${minRequired - selectedCount} more topic${minRequired - selectedCount > 1 ? 's' : ''} to continue`
+                        : selectedCount === maxAllowed
+                        ? '✓ Perfect selection!'
+                        : `Great! You can pick ${maxAllowed - selectedCount} more`}
+                    </div>
+
+                    {errors.interests && (
+                      <div style={{
+                        padding: '10px 14px',
+                        borderRadius: '10px',
+                        marginBottom: '12px',
+                        backgroundColor: '#fee',
+                        color: '#c33',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        border: '2px solid #fcc'
+                      }}>
+                        ⚠️ {errors.interests}
+                      </div>
+                    )}
+
+                    {/* Interest Bubbles */}
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '12px',
+                      maxHeight: '320px',
+                      overflowY: 'auto',
+                      padding: '16px',
+                      border: `2px solid ${errors.interests ? '#fcc' : '#e8e8e8'}`,
+                      borderRadius: '16px',
+                      background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
+                    }}>
+                      {availableInterests.length === 0 ? (
+                        <div style={{
+                          width: '100%',
+                          textAlign: 'center',
+                          padding: '30px 20px',
+                          color: '#999',
+                          fontSize: '14px'
+                        }}>
+                          <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔄</div>
+                          Loading interests...
+                        </div>
+                      ) : (
+                        availableInterests.map((interest) => {
+                          const isSelected = formData.selectedInterests.includes(interest.name);
+
+                          return (
+                            <button
+                              key={interest.name}
+                              onClick={() => toggleInterest(interest.name)}
+                              disabled={isLoading}
+                              type="button"
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '12px 18px',
+                                border: `2px solid ${isSelected ? '#ff6b35' : 'transparent'}`,
+                                borderRadius: '24px',
+                                background: isSelected
+                                  ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)'
+                                  : 'white',
+                                color: isSelected ? 'white' : '#333',
+                                fontSize: '14.5px',
+                                fontWeight: isSelected ? '600' : '500',
+                                cursor: isLoading ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                opacity: isLoading ? 0.6 : 1,
+                                boxShadow: isSelected
+                                  ? '0 8px 16px rgba(255, 107, 53, 0.35), 0 3px 6px rgba(255, 107, 53, 0.25)'
+                                  : '0 2px 4px rgba(0,0,0,0.08)',
+                                transform: isSelected ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isLoading) {
+                                  if (!isSelected) {
+                                    e.currentTarget.style.borderColor = '#ff6b35';
+                                    e.currentTarget.style.background = 'linear-gradient(135deg, #fff5eb 0%, #ffe8d6 100%)';
+                                    e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
+                                    e.currentTarget.style.boxShadow = '0 6px 12px rgba(255, 107, 53, 0.2)';
+                                  } else {
+                                    e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
+                                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(255, 107, 53, 0.4), 0 6px 12px rgba(255, 107, 53, 0.3)';
+                                  }
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isLoading) {
+                                  if (!isSelected) {
+                                    e.currentTarget.style.borderColor = 'transparent';
+                                    e.currentTarget.style.background = 'white';
+                                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.08)';
+                                  } else {
+                                    e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                                    e.currentTarget.style.boxShadow = '0 8px 16px rgba(255, 107, 53, 0.35), 0 3px 6px rgba(255, 107, 53, 0.25)';
+                                  }
+                                }
+                              }}
+                            >
+                              <span style={{
+                                fontSize: '20px',
+                                filter: isSelected ? 'drop-shadow(0 2px 2px rgba(0,0,0,0.2))' : 'none',
+                                transition: 'transform 0.3s ease',
+                                display: 'inline-block'
+                              }}>
+                                {interest.icon}
+                              </span>
+                              <span style={{
+                                letterSpacing: '0.01em',
+                                textShadow: isSelected ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'
+                              }}>
+                                {interest.name}
+                              </span>
+                              {isSelected && (
+                                <span style={{
+                                  marginLeft: '4px',
+                                  fontSize: '16px',
+                                  animation: 'checkmark 0.3s ease-in-out'
+                                }}>
+                                  ✓
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: 'white',
+                  background: isLoading ? '#ccc' : 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
+                  border: '2px solid transparent',
+                  borderRadius: '12px',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: isLoading ? 'none' : '0 4px 12px rgba(255, 107, 53, 0.3)',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  opacity: isLoading ? 0.6 : 1,
+                  boxSizing: 'border-box'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isLoading) {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 107, 53, 0.4)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isLoading) {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 107, 53, 0.3)';
+                  }
+                }}
+              >
+                {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Create Account')}
+                {!isLoading && <ChevronRight size={20} style={{ marginLeft: '8px' }} />}
+              </button>
+            </form>
+
+            {/* GOOGLE LOGIN BUTTON */}
+            <div style={{ marginTop: '24px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+              <a
+                href="http://localhost:8080/oauth2/authorization/google"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  backgroundColor: 'white',
+                  border: '1px solid #ddd',
+                  borderRadius: '12px',
+                  textDecoration: 'none',
+                  color: '#333',
+                  fontWeight: '600',
+                  transition: 'all 0.2s',
+                  boxSizing: 'border-box'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f5f5f5';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <img
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  alt="Google"
+                  style={{ width: '20px', height: '20px' }}
+                />
+                Continue with Google
+              </a>
+            </div>
 
             <div style={{ textAlign: 'center', marginTop: '24px' }}>
               <p style={{ margin: 0, color: '#666' }}>
