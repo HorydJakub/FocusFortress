@@ -30,14 +30,16 @@ public class User {
     @Email(message = "Invalid email format")
     private String email;
 
-    @NotNull(message = "Date of birth is required")
     private LocalDate dateOfBirth;
 
     private String gender;
 
-    @NotBlank(message = "Password is required")
+    // Password is optional (nullable) for OAuth2 users
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    private AuthProvider provider;
 
     private String verificationToken;
 
@@ -57,7 +59,6 @@ public class User {
 
     private String timezone;
 
-    // NEW: One-to-Many relationship with UserInterest
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<UserInterest> interests = new HashSet<>();
 
@@ -65,6 +66,7 @@ public class User {
         return role != Role.UNVERIFIED;
     }
 
+    // constructor is used by UserService.registerUser()
     public User(String name, String email, LocalDate dateOfBirth, String gender, String password, String verificationToken) {
         this.name = name;
         this.email = email;
@@ -73,6 +75,7 @@ public class User {
         this.password = password;
         this.verificationToken = verificationToken;
         this.role = Role.UNVERIFIED;
+        this.provider = AuthProvider.LOCAL; // Default to LOCAL for standard registration
     }
 
     // Helper methods for managing interests
@@ -84,11 +87,5 @@ public class User {
     public void removeInterest(UserInterest interest) {
         interests.remove(interest);
         interest.setUser(null);
-    }
-
-    public Set<Subcategory> getUserSubcategories() {
-        return interests.stream()
-                .map(UserInterest::getSubcategory)
-                .collect(java.util.stream.Collectors.toSet());
     }
 }

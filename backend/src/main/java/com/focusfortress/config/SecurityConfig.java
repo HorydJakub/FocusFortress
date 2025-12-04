@@ -1,6 +1,8 @@
 package com.focusfortress.config;
 
 import com.focusfortress.security.JwtAuthenticationFilter;
+import com.focusfortress.security.OAuth2LoginSuccessHandler;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,13 +21,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
-
-    public SecurityConfig(UserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
-    }
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
@@ -36,11 +36,17 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify").permitAll()
-                        .requestMatchers("/api/interests", "/api/interests/**").permitAll()  // Allow all interest endpoints
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/interests", "/api/interests/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        // Allow access to OAuth2 login endpoints
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/admin/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated()
+                )
+                // OAuth2 Login configuration
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2LoginSuccessHandler)
                 )
                 .userDetailsService(userDetailsService);
 
