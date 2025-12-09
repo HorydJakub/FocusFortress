@@ -3,30 +3,121 @@
 
 LAYOUT_WITH_LEGEND()
 
-title Component Diagram - FocusFortress API Application
+title Component Diagram - FocusFortress API Application (Complete Architecture)
 
 Container(spa, "Web Application", "React SPA", "Delivers content to user's web browser")
-ContainerDb(db, "Database", "MySQL", "Stores user data, habits, counters, interests")
-System_Ext(youtube, "YouTube Data API v3", "Provides video search")
+ContainerDb(db, "Database", "H2 (dev) / MySQL (prod)", "Stores all application data")
+System_Ext(youtube, "YouTube Data API v3", "Provides video search and metadata")
+System_Ext(smtp, "SMTP Server", "Mailhog (dev) / SMTP (prod)", "Sends emails")
 
-Container_Boundary(api, "API Application") {
-    Component(security, "Security Filter", "Spring Security + JWT Filter", "Intercepts requests and validates JWT tokens")
-    Component(controllers, "REST Controllers", "Spring MVC Controllers", "Handles HTTP requests and returns JSON responses")
-    Component(services, "Business Services", "Spring Services", "Executes business logic and coordinates operations")
-    Component(youtube_client, "YouTube Client", "WebClient", "Searches videos via YouTube API")
-    Component(email, "Email Service", "JavaMailSender", "Sends verification emails via SMTP")
-    Component(repos, "Repositories", "Spring Data JPA", "Executes database queries")
-    Component(config, "Configuration", "Spring @Configuration", "Configures security, CORS, and application settings")
+Container_Boundary(api, "API Application - Spring Boot") {
+    ' Security Layer
+    Component(security, "Security Filter", "Spring Security + JWT", "Validates JWT tokens and manages authentication")
+    Component(oauth2, "OAuth2 Login", "Spring OAuth2 Client", "Handles Google authentication")
+    Component(cors_config, "CORS Configuration", "Spring @Configuration", "Allows frontend requests")
+
+    ' Controllers Layer
+    Component(auth_ctrl, "AuthController", "REST Controller", "POST /register, /login, /verify")
+    Component(user_profile_ctrl, "UserProfileController", "REST Controller", "User profile & report settings")
+    Component(habit_ctrl, "HabitController", "REST Controller", "CRUD for habits")
+    Component(counter_ctrl, "CounterController", "REST Controller", "CRUD for counters")
+    Component(media_ctrl, "MediaLibraryController", "REST Controller", "User's video library")
+    Component(media_tile_ctrl, "MediaTileController", "REST Controller", "Personalized video recommendations")
+    Component(interest_ctrl, "InterestController", "REST Controller", "Categories & subcategories")
+    Component(user_interest_ctrl, "UserInterestController", "REST Controller", "User interests management + custom")
+
+    ' Service Layer
+    Component(user_service, "UserService", "Service", "User registration, auth, profile")
+    Component(habit_service, "HabitService", "Service", "Habit business logic")
+    Component(counter_service, "CounterService", "Service", "Counter tracking logic")
+    Component(media_service, "MediaLibraryService", "Service", "Video library management")
+    Component(youtube_service, "YouTubeService", "Service", "Video recommendations engine")
+    Component(report_service, "ReportService", "Service", "Progress report generation")
+    Component(email_service, "EmailService", "Service", "Email sending (verification + reports)")
+
+    ' Repository Layer
+    Component(repos, "Data Repositories", "Spring Data JPA", "UserRepository, HabitRepository, CounterRepository, UserInterestRepository, UserMediaItemRepository, ReportSettingsRepository, Category/SubcategoryRepository")
+
+    ' External Clients
+    Component(youtube_client, "YouTube WebClient", "Spring WebFlux", "Reactive HTTP client for YouTube API")
+    Component(mail_sender, "JavaMailSender", "Spring Mail", "SMTP client for emails")
 }
 
-Rel(spa, security, "Sends HTTP requests to", "JSON/HTTPS")
-Rel(security, controllers, "Forwards authenticated requests to", "HTTP")
-Rel(security, config, "Reads configuration from", "Dependency Injection")
-Rel(controllers, services, "Delegates business logic to", "Method calls with DTOs")
-Rel(services, youtube_client, "Fetches video recommendations from", "Method calls")
-Rel(services, email, "Sends verification emails via", "Method calls")
-Rel(services, repos, "Reads and writes entities via", "Method calls with JPA entities")
-Rel(repos, db, "Executes SQL queries on", "JDBC")
-Rel(youtube_client, youtube, "Getting matching videos via", "HTTPS/JSON")
+' Security Flow
+Rel(spa, security, "Sends HTTP requests", "JSON/HTTPS with JWT")
+Rel(security, oauth2, "Redirects OAuth2", "Google login flow")
+Rel(security, cors_config, "Validates origin", "CORS headers")
+
+' Controller → Service Flow
+Rel(spa, auth_ctrl, "Register/Login", "POST with credentials/interests")
+Rel(spa, user_profile_ctrl, "Profile & Reports", "GET/PUT/POST")
+Rel(spa, habit_ctrl, "Manage Habits", "CRUD operations")
+Rel(spa, counter_ctrl, "Manage Counters", "CRUD operations")
+Rel(spa, media_ctrl, "Video Library", "CRUD video items")
+Rel(spa, media_tile_ctrl, "Get Recommendations", "POST with refresh")
+Rel(spa, interest_ctrl, "Get Categories", "GET subcategories")
+Rel(spa, user_interest_ctrl, "Manage Interests", "PUT/POST/DELETE custom")
+
+Rel(auth_ctrl, user_service, "Delegates auth", "registerUser(), login()")
+Rel(user_profile_ctrl, user_service, "Profile updates", "updateProfile()")
+Rel(user_profile_ctrl, report_service, "Report operations", "generate/save settings")
+Rel(habit_ctrl, habit_service, "Habit operations", "create/update/delete")
+Rel(counter_ctrl, counter_service, "Counter operations", "create/update/delete")
+Rel(media_ctrl, media_service, "Library operations", "add/update/delete videos")
+Rel(media_tile_ctrl, youtube_service, "Get recommendations", "getPersonalizedVideos()")
+Rel(user_interest_ctrl, user_service, "Interest management", "add/remove/custom")
+
+' Service → Repository Flow
+Rel(user_service, repos, "User CRUD", "save/find User entities")
+Rel(habit_service, repos, "Habit CRUD", "HabitRepository + HabitProgressRepository")
+Rel(counter_service, repos, "Counter CRUD", "CounterRepository")
+Rel(media_service, repos, "Media CRUD", "UserMediaItemRepository")
+Rel(report_service, repos, "Report data", "reads all user data for report")
+Rel(youtube_service, repos, "User interests", "reads for matching")
+
+' External Services
+Rel(user_service, email_service, "Send verification", "sendVerificationEmail()")
+Rel(report_service, email_service, "Send report", "sendProgressReport()")
+Rel(email_service, mail_sender, "SMTP", "MimeMessage")
+Rel(mail_sender, smtp, "Send email", "SMTP protocol")
+
+Rel(youtube_service, youtube_client, "Search videos", "REST API calls")
+Rel(youtube_client, youtube, "GET videos", "HTTPS/JSON with API key")
+
+' Repository → Database
+Rel(repos, db, "SQL queries", "JDBC via Hibernate")
+
+note right of security
+  JWT Authentication:
+  • Validates Bearer tokens
+  • Extracts user email
+  • Supports LOCAL & GOOGLE providers
+end note
+
+note right of youtube_service
+  Recommendation Engine:
+  • Matches user interests
+  • Searches YouTube API
+  • Caches results
+  • Avoids duplicates
+  • Tracks user library
+end note
+
+note right of report_service
+  Progress Reports:
+  • Aggregates user data
+  • Generates HTML email
+  • Supports automatic delivery
+  • Weekly/Monthly frequency
+  • Customizable content
+end note
+
+note right of repos
+  9 JPA Repositories:
+  • User, Habit, HabitProgress
+  • Counter, UserInterest
+  • Category, Subcategory
+  • UserMediaItem, ReportSettings
+end note
 
 @enduml

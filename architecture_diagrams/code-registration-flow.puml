@@ -3,39 +3,68 @@
 
 LAYOUT_TOP_DOWN()
 
-title Code Diagram - FocusFortress API Application - User Registration with Interests Selection
+title Code Diagram - FocusFortress API Application - User Registration & Authentication Flow
 
-Container_Boundary(registration, "Registration Flow") {
-    Component(user_controller, "UserController", "REST Controller", "POST /api/auth/register endpoint")
-    Component(user_service, "UserService", "Service Class", "Orchestrates user registration")
-    Component(interest_service, "InterestService", "Service Class", "Creates initial interests structure")
-    Component(email_service, "EmailService", "Service Class", "Sends verification email")
+Container_Boundary(registration, "Registration & Auth Flow") {
+    Component(auth_controller, "AuthController", "REST Controller", "POST /api/auth/register, /api/auth/login endpoints")
+    Component(oauth2_handler, "OAuth2SuccessHandler", "Security Handler", "Handles Google OAuth2 authentication")
+    Component(user_service, "UserService", "Service Class", "Orchestrates user registration and authentication")
+    Component(jwt_util, "JWTUtil", "Utility Class", "Generates and validates JWT tokens")
+    Component(email_service, "EmailService", "Service Class", "Sends verification and report emails")
+
+    Component(user_profile_ctrl, "UserProfileController", "REST Controller", "Manages user profile and report settings")
+    Component(report_service, "ReportService", "Service Class", "Generates progress reports")
 
     Component(user_repo, "UserRepository", "JpaRepository", "CRUD operations for User entity")
-    Component(category_repo, "CategoryRepository", "JpaRepository", "CRUD operations for Category entity")
-    Component(subcategory_repo, "SubcategoryRepository", "JpaRepository", "CRUD operations for Subcategory entity")
-    Component(user_interest_repo, "UserInterestRepository", "JpaRepository", "CRUD operations for UserInterest entity")
+    Component(user_interest_repo, "UserInterestRepository", "JpaRepository", "Manages user interests (regular + custom)")
+    Component(report_settings_repo, "ReportSettingsRepository", "JpaRepository", "CRUD for ReportSettings entity")
 
-    Component(interest_enum, "InterestCategory", "Enum", "Defines available interests with category/subcategory structure")
-    Component(password_encoder, "PasswordEncoder", "BCryptPasswordEncoder", "Hashes passwords")
+    Component(password_encoder, "PasswordEncoder", "BCryptPasswordEncoder", "Hashes passwords for LOCAL provider")
 }
 
-ContainerDb(db, "Database", "MySQL", "Stores users, categories, subcategories, user_interests")
+ContainerDb(db, "Database", "H2/MySQL", "Stores users, interests, report_settings, habits, counters, media_library")
 
-Rel(user_controller, user_service, "Calls registerUser()", "Method call with UserRegistrationDTO")
-Rel(user_service, password_encoder, "Encodes password", "encode(rawPassword)")
-Rel(user_service, user_repo, "Saves user", "save(User)")
-Rel(user_service, interest_service, "Creates interests", "createInitialInterestsForUser(user, selectedInterests)")
+' Authentication Flow
+Rel(auth_controller, user_service, "Calls registerUser()", "UserRegistrationDTO with selectedInterests")
+Rel(auth_controller, jwt_util, "Generates token", "generateToken(userEmail)")
+Rel(oauth2_handler, user_service, "Creates/finds user", "processOAuth2User()")
+Rel(oauth2_handler, jwt_util, "Generates token", "generateToken(userEmail)")
+
+' User Registration
+Rel(user_service, password_encoder, "Encodes password", "encode() - only for LOCAL provider")
+Rel(user_service, user_repo, "Saves user", "save(User) with UNVERIFIED role")
+Rel(user_service, user_interest_repo, "Saves selected interests", "saveAll(UserInterest) - min 3 required")
 Rel(user_service, email_service, "Sends verification", "sendVerificationEmail(email, token)")
 
-Rel(interest_service, interest_enum, "Reads structure from", "InterestCategory.values()")
-Rel(interest_service, category_repo, "Finds/creates categories", "findByName() or save()")
-Rel(interest_service, subcategory_repo, "Finds/creates subcategories", "findByNameAndCategoryId() or save()")
-Rel(interest_service, user_interest_repo, "Creates user interests", "save(UserInterest)")
+' Report Settings Management
+Rel(user_profile_ctrl, report_service, "Manages reports", "saveReportSettings(), generateReport()")
+Rel(report_service, report_settings_repo, "Saves settings", "save(ReportSettings)")
+Rel(report_service, user_interest_repo, "Reads interests", "findByUserIdOrderBySelectedAtDesc()")
+Rel(report_service, email_service, "Sends report", "sendProgressReport(email, reportDTO)")
 
-Rel(user_repo, db, "INSERT user", "JDBC")
-Rel(category_repo, db, "SELECT/INSERT categories", "JDBC")
-Rel(subcategory_repo, db, "SELECT/INSERT subcategories", "JDBC")
-Rel(user_interest_repo, db, "INSERT user_interests", "JDBC")
+' Database Relations
+Rel(user_repo, db, "INSERT/UPDATE users", "JDBC - supports LOCAL & GOOGLE providers")
+Rel(user_interest_repo, db, "INSERT/DELETE user_interests", "JDBC - regular + custom with emoji")
+Rel(report_settings_repo, db, "INSERT/UPDATE report_settings", "JDBC - automatic delivery settings")
+
+note right of user_service
+  Supports two authentication providers:
+  • LOCAL: email/password with verification
+  • GOOGLE: OAuth2 without verification
+
+  User must select min 3 interests during
+  registration (max 7 total with custom)
+end note
+
+note right of report_service
+  Generates reports including:
+  • Active/Completed Habits
+  • User Interests with emojis
+  • Media Library stats (watch_later,
+    currently_watching, finished)
+  • Counters with longest streak
+
+  Supports automatic weekly/monthly delivery
+end note
 
 @enduml

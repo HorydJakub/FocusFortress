@@ -3,24 +3,124 @@
 
 LAYOUT_WITH_LEGEND()
 
-title Component Diagram - FocusFortress Web Application
+title Component Diagram - FocusFortress Web Application (React SPA)
 
-Person(user, "User", "A person who wants to build and track healthy habits")
+Person(user, "User", "A person building healthy habits")
 Container(api, "API Application", "Spring Boot", "Provides REST API")
 
-Container_Boundary(web_app, "Web Application") {
-    Component(routing, "Routing & Navigation", "React Router", "Manages application routes and navigation between pages")
-    Component(auth, "Authentication Module", "React Context + Service", "Manages user authentication state and JWT tokens")
-    Component(pages, "Page Components", "React Components", "Renders main application pages (Dashboard, Habits, Counters, Media)")
-    Component(api_client, "API Client", "Axios", "Sends HTTP requests with JWT authentication")
+Container_Boundary(web_app, "Web Application - React SPA") {
+    ' Core Infrastructure
+    Component(routing, "React Router", "react-router-dom", "Client-side routing and navigation")
+    Component(auth_context, "AuthContext", "React Context", "Global authentication state management")
+    Component(api_client, "API Service", "Axios + authService", "HTTP client with JWT interceptor")
+
+    ' Authentication Pages
+    Component(auth_page, "AuthPage", "React Component", "Login/Register forms with interests selection")
+    Component(onboarding, "OnboardingPage", "React Component", "Post-registration interest selection (min 3)")
+    Component(oauth_handler, "OAuth2RedirectHandler", "React Component", "Handles Google OAuth2 callback")
+
+    ' Main Application Pages
+    Component(dashboard, "Dashboard", "React Component", "Overview with stats and quick actions")
+    Component(habits, "Habits", "React Component", "Habit creation, tracking, progress visualization")
+    Component(counters, "Counters", "React Component", "Counter creation and streak tracking")
+    Component(my_media, "MyMedia", "React Component", "User's video library with status filtering")
+    Component(media_tiles, "MediaTiles", "React Component", "Personalized video recommendations")
+    Component(settings, "Settings", "React Component", "Profile, Interests (custom+regular), Report settings")
+
+    ' Shared Components
+    Component(layout, "Layout", "React Component", "Navigation, header, sidebar")
+    Component(interest_chip, "InterestChip", "React Component", "Reusable interest badge with emoji")
+    Component(video_tile, "VideoTile", "React Component", "YouTube video card with actions")
+
+    ' Background Components
+    Component(animated_bg, "AnimatedBackground", "Canvas + CSS", "Particle system with collision detection")
 }
 
-Rel(user, pages, "Interacts with", "HTTPS")
-Rel(routing, auth, "Checks authentication via", "React Context")
-Rel(routing, pages, "Renders pages via", "React props")
-Rel(pages, auth, "Gets user state from", "React Context")
-Rel(pages, api_client, "Fetches data via", "Function calls")
-Rel(auth, api_client, "Authenticates via", "Function calls")
-Rel(api_client, api, "Sends HTTP requests to", "JSON/HTTPS")
+' User Interactions
+Rel(user, auth_page, "Login/Register", "Email or Google OAuth2")
+Rel(user, dashboard, "Views overview", "Stats and quick access")
+Rel(user, habits, "Manages habits", "Create, track, complete")
+Rel(user, counters, "Tracks counters", "Increment, view streaks")
+Rel(user, my_media, "Video library", "Watch Later, Currently Watching, Finished")
+Rel(user, media_tiles, "Discovers content", "Personalized recommendations")
+Rel(user, settings, "Manages profile", "Profile, Interests, Report settings")
+
+' Routing & Navigation
+Rel(routing, auth_context, "Checks auth", "ProtectedRoute component")
+Rel(routing, auth_page, "Routes /auth", "Renders login/register")
+Rel(routing, onboarding, "Routes /onboarding", "For new users")
+Rel(routing, oauth_handler, "Routes /oauth2/redirect", "Google callback")
+Rel(routing, dashboard, "Routes /dashboard", "Authenticated users")
+Rel(routing, habits, "Routes /habits", "Authenticated users")
+Rel(routing, counters, "Routes /counters", "Authenticated users")
+Rel(routing, my_media, "Routes /my-media", "Authenticated users")
+Rel(routing, settings, "Routes /settings", "Modal overlay")
+
+' Layout Integration
+Rel(layout, dashboard, "Wraps page", "Navigation context")
+Rel(layout, habits, "Wraps page", "Navigation context")
+Rel(layout, counters, "Wraps page", "Navigation context")
+Rel(layout, my_media, "Wraps page", "Navigation context")
+
+' Shared Component Usage
+Rel(settings, interest_chip, "Displays interests", "With emoji + name")
+Rel(media_tiles, video_tile, "Renders videos", "Reusable card")
+Rel(my_media, video_tile, "Renders videos", "With status actions")
+
+' Authentication Flow
+Rel(auth_page, auth_context, "Sets user state", "login(), register()")
+Rel(auth_page, api_client, "Authenticates", "POST /auth/login or /register")
+Rel(oauth_handler, auth_context, "Sets OAuth user", "After Google login")
+Rel(onboarding, api_client, "Saves interests", "PUT /user/interests")
+
+' Page → API Communication
+Rel(dashboard, api_client, "Fetches stats", "GET habits, counters, media count")
+Rel(habits, api_client, "CRUD habits", "POST/PUT/DELETE /habits")
+Rel(counters, api_client, "CRUD counters", "POST/PUT/DELETE /counters")
+Rel(my_media, api_client, "CRUD library", "POST/PUT/DELETE /media-library")
+Rel(media_tiles, api_client, "Get recommendations", "POST /media-tiles/refresh")
+Rel(settings, api_client, "Profile & Reports", "PUT /user/profile, POST /user/report-settings")
+
+' Background Components
+Rel(auth_page, animated_bg, "Displays", "Particle animation with form collision")
+
+' API Communication
+Rel(api_client, api, "HTTP requests", "JSON/HTTPS with JWT Bearer token")
+Rel(api_client, auth_context, "Updates auth state", "On 401 responses")
+
+note right of auth_context
+  Global State:
+  • User object (name, email, role)
+  • JWT token (localStorage)
+  • isAuthenticated flag
+  • login/logout/register functions
+  • Auto-refresh on mount
+end note
+
+note right of api_client
+  API Service (authService.js):
+  • Axios instance with interceptors
+  • Automatic JWT header injection
+  • Token refresh on 401
+  • Error handling
+  • All API endpoints abstracted
+end note
+
+note right of settings
+  4 Tabs in Settings Modal:
+  • Profile (name, email, DOB, gender)
+  • Interests (select from categories)
+  • Custom Interests (add with emoji)
+  • Report (generate & schedule)
+end note
+
+note right of animated_bg
+  Advanced Canvas Animation:
+  • 80 particles with motion
+  • Dynamic line connections
+  • Collision with form element
+  • 3 gradient orbs floating
+  • 60 FPS performance
+end note
 
 @enduml
