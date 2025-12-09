@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.util.Arrays;
 import java.util.Date;
 
 @Component
@@ -23,10 +22,18 @@ public class JwtUtil {
     }
 
     public String generateToken(String email) {
+        return generateToken(email, false);
+    }
+
+    public String generateToken(String email, boolean rememberMe) {
+        long expirationTime = rememberMe
+            ? 1000L * 60 * 60 * 24 * 30  // 30 days if "Remember Me" is checked
+            : 1000L * 60 * 60 * 24;       // 24 hours for regular login
+
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 24h
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

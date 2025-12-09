@@ -70,7 +70,7 @@ public class UserController {
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        String token = jwtUtil.generateToken(user.getEmail(), loginRequest.isRememberMe());
 
         return ResponseEntity.ok(new LoginResponseDTO(token, "Bearer"));
     }

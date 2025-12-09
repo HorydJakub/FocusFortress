@@ -10,14 +10,26 @@ const authService = {
     }
   },
 
-  login: async (email, password) => {
+  login: async (email, password, rememberMe = false) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post('/auth/login', { email, password, rememberMe });
       const { accessToken } = response.data;
 
       if (accessToken) {
-        localStorage.setItem('token', accessToken);
-        localStorage.setItem('user', email);
+        if (rememberMe) {
+          // Store token in localStorage for persistent login
+          localStorage.setItem('token', accessToken);
+          localStorage.setItem('user', email);
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          // Store token in sessionStorage for session-only login
+          sessionStorage.setItem('token', accessToken);
+          sessionStorage.setItem('user', email);
+          // Clear any previous rememberMe flag
+          localStorage.removeItem('rememberMe');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
       }
 
       return response.data;
@@ -29,14 +41,17 @@ const authService = {
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('rememberMe');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
   },
 
   getCurrentUser: () => {
-    return localStorage.getItem('user');
+    return localStorage.getItem('user') || sessionStorage.getItem('user');
   },
 
   isAuthenticated: () => {
-    return !!localStorage.getItem('token');
+    return !!(localStorage.getItem('token') || sessionStorage.getItem('token'));
   },
 
   verify: async (token) => {

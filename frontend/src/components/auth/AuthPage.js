@@ -14,6 +14,7 @@ const AuthPage = () => {
     confirmPassword: '',
     selectedInterests: []
   });
+  const [rememberMe, setRememberMe] = useState(false);
   const [availableInterests, setAvailableInterests] = useState([]);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
@@ -134,7 +135,7 @@ const AuthPage = () => {
 
     try {
       if (isLogin) {
-        await login(formData.email, formData.password);
+        await login(formData.email, formData.password, rememberMe);
         navigate('/dashboard');
       } else {
         await register({
@@ -171,6 +172,7 @@ const AuthPage = () => {
     setIsLogin(!isLogin);
     setErrors({});
     setMessage('');
+    setRememberMe(false);
     setFormData({
       name: '',
       email: '',
@@ -583,6 +585,43 @@ const AuthPage = () => {
                     </div>
                   </div>
                 </>
+              )}
+
+              {isLogin && (
+                <div style={{
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <input
+                    type="checkbox"
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    disabled={isLoading}
+                    style={{
+                      cursor: isLoading ? 'not-allowed' : 'pointer',
+                      width: '18px',
+                      height: '18px',
+                      accentColor: '#ff6b35',
+                      opacity: isLoading ? 0.6 : 1
+                    }}
+                  />
+                  <label
+                    htmlFor="rememberMe"
+                    style={{
+                      fontSize: '14px',
+                      color: '#666',
+                      cursor: isLoading ? 'not-allowed' : 'pointer',
+                      opacity: isLoading ? 0.6 : 1,
+                      userSelect: 'none',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Remember me on this device
+                  </label>
+                </div>
               )}
 
               <button
