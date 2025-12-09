@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AlertCircle, ChevronRight } from 'lucide-react';
+import AnimatedBackground from './AnimatedBackground';
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -195,9 +196,14 @@ const AuthPage = () => {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
-      background: 'linear-gradient(135deg, #fff5eb 0%, #ffe8d6 100%)'
+      background: 'linear-gradient(135deg, #fff5eb 0%, #ffe8d6 100%)',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <div style={{ maxWidth: '700px', width: '100%' }}>
+      {/* Animated Background */}
+      <AnimatedBackground />
+
+      <div style={{ maxWidth: '700px', width: '100%', position: 'relative', zIndex: 1 }}>
         <div style={{
           background: 'white',
           borderRadius: '24px',
