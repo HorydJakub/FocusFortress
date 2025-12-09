@@ -5,7 +5,6 @@ import authService from '../../services/authService';
 import EmojiPicker from 'emoji-picker-react';
 
 const Settings = ({ isOpen, onClose }) => {
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -30,6 +29,17 @@ const Settings = ({ isOpen, onClose }) => {
   const [warningAccepted, setWarningAccepted] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
+  // Report settings state
+  const [reportSettings, setReportSettings] = useState({
+    includeActiveHabits: true,
+    includeCompletedHabits: true,
+    includeInterests: true,
+    includeMediaLibrary: true,
+    includeCounters: true,
+    automaticReports: false,
+    reportFrequency: 'weekly' // 'weekly' or 'monthly'
+  });
+
   const MAX_TOTAL_INTERESTS = 7;
 
   // Fetch user profile data on component mount
@@ -37,6 +47,7 @@ const Settings = ({ isOpen, onClose }) => {
     if (isOpen) {
       fetchUserProfile();
       fetchInterests();
+      fetchReportSettings();
     }
   }, [isOpen]);
 
@@ -270,10 +281,64 @@ const Settings = ({ isOpen, onClose }) => {
     }
   };
 
+  // Report functions
+  const fetchReportSettings = async () => {
+    try {
+      const settings = await authService.getReportSettings();
+      if (settings) {
+        setReportSettings(settings);
+      }
+    } catch (error) {
+      console.error('Failed to fetch report settings:', error);
+      // Keep default settings if fetch fails
+    }
+  };
+
+  const handleReportSettingChange = (setting) => {
+    setReportSettings(prev => ({
+      ...prev,
+      [setting]: !prev[setting]
+    }));
+  };
+
+  const handleFrequencyChange = (frequency) => {
+    setReportSettings(prev => ({
+      ...prev,
+      reportFrequency: frequency
+    }));
+  };
+
+  const handleSaveReportSettings = async () => {
+    setMessage('');
+    setIsLoading(true);
+    try {
+      await authService.saveReportSettings(reportSettings);
+      setMessage('✅ Report settings saved successfully!');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage(error || 'Failed to save report settings');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    setMessage('');
+    setIsLoading(true);
+    try {
+      await authService.generateReport(reportSettings);
+      setMessage('✅ Report generated and sent to your email!');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage(error || 'Failed to generate report');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   const totalSelected = userInterests.length + customInterests.length;
-  const minRequired = 3;
 
   return (
     <div style={{
@@ -384,6 +449,23 @@ const Settings = ({ isOpen, onClose }) => {
             }}
           >
             Custom Interests
+          </button>
+          <button
+            onClick={() => setActiveTab('report')}
+            style={{
+              flex: 1,
+              padding: '16px',
+              border: 'none',
+              background: activeTab === 'report' ? 'white' : 'transparent',
+              color: activeTab === 'report' ? '#ff6b35' : '#999',
+              fontWeight: activeTab === 'report' ? '600' : '500',
+              fontSize: '16px',
+              cursor: 'pointer',
+              borderBottom: activeTab === 'report' ? '3px solid #ff6b35' : 'none',
+              transition: 'all 0.2s'
+            }}
+          >
+            Report
           </button>
         </div>
 
@@ -1083,6 +1165,319 @@ const Settings = ({ isOpen, onClose }) => {
                     {isLoading ? 'Adding...' : totalSelected >= MAX_TOTAL_INTERESTS ? '🔒 Limit Reached' : '✨ Add Custom Interest'}
                   </button>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* REPORT TAB */}
+          {activeTab === 'report' && (
+            <div>
+              <h3 style={{
+                fontSize: '20px',
+                fontWeight: '700',
+                color: '#333',
+                marginBottom: '8px',
+                letterSpacing: '-0.02em'
+              }}>
+                📊 Progress Report
+              </h3>
+              <p style={{
+                fontSize: '14px',
+                color: '#666',
+                marginBottom: '24px',
+                lineHeight: '1.6'
+              }}>
+                Generate a comprehensive report of your FocusFortress journey. Customize what to include and set up automatic delivery.
+              </p>
+
+              {/* Report Options */}
+              <div style={{
+                background: '#f8f8f8',
+                borderRadius: '16px',
+                padding: '20px',
+                marginBottom: '24px',
+                border: '2px solid #e0e0e0'
+              }}>
+                <h4 style={{
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: '#333',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  📋 Report Contents
+                </h4>
+
+                {/* Checkboxes for report options */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {[
+                    { key: 'includeActiveHabits', icon: '🎯', label: 'Active Habits Count' },
+                    { key: 'includeCompletedHabits', icon: '✅', label: 'Completed Habits Count' },
+                    { key: 'includeInterests', icon: '⭐', label: 'Your Interests' },
+                    { key: 'includeMediaLibrary', icon: '🎬', label: 'Media Library Stats (Watch Later, Currently Watching, Finished)' },
+                    { key: 'includeCounters', icon: '🔢', label: 'Counters Summary (Longest streak, Total counters)' }
+                  ].map(option => (
+                    <label
+                      key={option.key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        cursor: isLoading ? 'not-allowed' : 'pointer',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        background: reportSettings[option.key] ? '#fff5eb' : 'white',
+                        border: `2px solid ${reportSettings[option.key] ? '#ff6b35' : '#e0e0e0'}`,
+                        transition: 'all 0.2s',
+                        opacity: isLoading ? 0.6 : 1
+                      }}
+                      onClick={() => !isLoading && handleReportSettingChange(option.key)}
+                    >
+                      <div style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '4px',
+                        border: `2px solid ${reportSettings[option.key] ? '#ff6b35' : '#ddd'}`,
+                        background: reportSettings[option.key] ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)' : 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        boxShadow: reportSettings[option.key] ? '0 2px 8px rgba(255, 107, 53, 0.3)' : 'none',
+                        transition: 'all 0.2s'
+                      }}>
+                        {reportSettings[option.key] && (
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 14 14"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M11.6666 3.5L5.24992 9.91667L2.33325 7"
+                              stroke="white"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '20px', flexShrink: 0 }}>{option.icon}</span>
+                      <span style={{
+                        fontSize: '14px',
+                        fontWeight: reportSettings[option.key] ? '600' : '500',
+                        color: reportSettings[option.key] ? '#ff6b35' : '#555',
+                        flex: 1
+                      }}>
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Automatic Reports */}
+              <div style={{
+                background: '#f0f9ff',
+                borderRadius: '16px',
+                padding: '20px',
+                marginBottom: '24px',
+                border: '2px solid #bfdbfe'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '16px'
+                }}>
+                  <h4 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#333',
+                    margin: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    ⚡ Automatic Reports
+                  </h4>
+                  <div
+                    onClick={() => !isLoading && handleReportSettingChange('automaticReports')}
+                    style={{
+                      width: '50px',
+                      height: '26px',
+                      borderRadius: '13px',
+                      background: reportSettings.automaticReports
+                        ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)'
+                        : '#ddd',
+                      cursor: isLoading ? 'not-allowed' : 'pointer',
+                      position: 'relative',
+                      transition: 'all 0.3s',
+                      opacity: isLoading ? 0.6 : 1
+                    }}
+                  >
+                    <div style={{
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      background: 'white',
+                      position: 'absolute',
+                      top: '2px',
+                      left: reportSettings.automaticReports ? '26px' : '2px',
+                      transition: 'left 0.3s',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }} />
+                  </div>
+                </div>
+
+                {reportSettings.automaticReports && (
+                  <div style={{
+                    marginTop: '16px',
+                    paddingTop: '16px',
+                    borderTop: '1px solid #bfdbfe'
+                  }}>
+                    <p style={{
+                      fontSize: '13px',
+                      color: '#666',
+                      marginBottom: '12px',
+                      fontWeight: '500'
+                    }}>
+                      📅 Frequency:
+                    </p>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <button
+                        onClick={() => !isLoading && handleFrequencyChange('weekly')}
+                        disabled={isLoading}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          border: `2px solid ${reportSettings.reportFrequency === 'weekly' ? '#ff6b35' : '#e0e0e0'}`,
+                          borderRadius: '10px',
+                          background: reportSettings.reportFrequency === 'weekly'
+                            ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)'
+                            : 'white',
+                          color: reportSettings.reportFrequency === 'weekly' ? 'white' : '#555',
+                          fontSize: '14px',
+                          fontWeight: reportSettings.reportFrequency === 'weekly' ? '600' : '500',
+                          cursor: isLoading ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s',
+                          opacity: isLoading ? 0.6 : 1
+                        }}
+                      >
+                        📅 Weekly
+                      </button>
+                      <button
+                        onClick={() => !isLoading && handleFrequencyChange('monthly')}
+                        disabled={isLoading}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          border: `2px solid ${reportSettings.reportFrequency === 'monthly' ? '#ff6b35' : '#e0e0e0'}`,
+                          borderRadius: '10px',
+                          background: reportSettings.reportFrequency === 'monthly'
+                            ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)'
+                            : 'white',
+                          color: reportSettings.reportFrequency === 'monthly' ? 'white' : '#555',
+                          fontSize: '14px',
+                          fontWeight: reportSettings.reportFrequency === 'monthly' ? '600' : '500',
+                          cursor: isLoading ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s',
+                          opacity: isLoading ? 0.6 : 1
+                        }}
+                      >
+                        📆 Monthly
+                      </button>
+                    </div>
+                    <p style={{
+                      fontSize: '12px',
+                      color: '#666',
+                      marginTop: '12px',
+                      padding: '8px 12px',
+                      background: 'rgba(255, 255, 255, 0.6)',
+                      borderRadius: '8px',
+                      lineHeight: '1.5'
+                    }}>
+                      ℹ️ Reports will be automatically sent to your email <strong>{profileData.email}</strong> every {reportSettings.reportFrequency === 'weekly' ? 'Monday morning' : 'first day of the month'}.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={handleSaveReportSettings}
+                  disabled={isLoading}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: isLoading ? '#999' : '#ff6b35',
+                    background: isLoading ? '#f0f0f0' : 'white',
+                    border: '2px solid #ff6b35',
+                    borderRadius: '12px',
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s',
+                    opacity: isLoading ? 0.6 : 1
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isLoading) {
+                      e.currentTarget.style.background = '#fff5eb';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isLoading) {
+                      e.currentTarget.style.background = 'white';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }
+                  }}
+                >
+                  {isLoading ? 'Saving...' : '💾 Save Settings'}
+                </button>
+                <button
+                  onClick={handleGenerateReport}
+                  disabled={isLoading}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: 'white',
+                    background: isLoading ? '#ccc' : 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: isLoading ? 'none' : '0 4px 12px rgba(255, 107, 53, 0.3)',
+                    transition: 'all 0.2s',
+                    opacity: isLoading ? 0.6 : 1
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isLoading) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 107, 53, 0.4)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isLoading) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 107, 53, 0.3)';
+                    }
+                  }}
+                >
+                  {isLoading ? 'Generating...' : '📧 Generate & Send Report Now'}
+                </button>
               </div>
             </div>
           )}
