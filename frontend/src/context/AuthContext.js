@@ -10,8 +10,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const verifyToken = async () => {
-      const token = localStorage.getItem('token');
-      const currentUser = localStorage.getItem('user');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const currentUser = localStorage.getItem('user') || sessionStorage.getItem('user');
 
       if (!token || !currentUser) {
         setLoading(false);
@@ -58,8 +58,8 @@ export const AuthProvider = ({ children }) => {
     verifyToken();
   }, []);
 
-  const login = async (email, password) => {
-    const data = await authService.login(email, password);
+  const login = async (email, password, rememberMe = false) => {
+    const data = await authService.login(email, password, rememberMe);
     setUser(email);
     return data;
   };
