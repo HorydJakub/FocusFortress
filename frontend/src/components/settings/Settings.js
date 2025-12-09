@@ -1172,311 +1172,328 @@ const Settings = ({ isOpen, onClose }) => {
           {/* REPORT TAB */}
           {activeTab === 'report' && (
             <div>
-              <h3 style={{
-                fontSize: '20px',
-                fontWeight: '700',
-                color: '#333',
-                marginBottom: '8px',
-                letterSpacing: '-0.02em'
-              }}>
-                📊 Progress Report
-              </h3>
-              <p style={{
-                fontSize: '14px',
-                color: '#666',
-                marginBottom: '24px',
-                lineHeight: '1.6'
-              }}>
-                Generate a comprehensive report of your FocusFortress journey. Customize what to include and set up automatic delivery.
-              </p>
-
-              {/* Report Options */}
-              <div style={{
-                background: '#f8f8f8',
-                borderRadius: '16px',
-                padding: '20px',
-                marginBottom: '24px',
-                border: '2px solid #e0e0e0'
-              }}>
-                <h4 style={{
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#333',
-                  marginBottom: '16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
+              {/* Clean Header */}
+              <div style={{ marginBottom: '32px' }}>
+                <h3 style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  color: '#1d1d1f',
+                  marginBottom: '8px',
+                  letterSpacing: '-0.02em'
                 }}>
-                  📋 Report Contents
+                  Progress Report
+                </h3>
+                <p style={{
+                  fontSize: '17px',
+                  color: '#86868b',
+                  marginBottom: 0,
+                  lineHeight: '1.5',
+                  fontWeight: '400'
+                }}>
+                  Generate insights about your journey.
+                </p>
+              </div>
+
+              {/* Report Options - Minimalist Cards */}
+              <div style={{ marginBottom: '32px' }}>
+                <h4 style={{
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#86868b',
+                  marginBottom: '16px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em'
+                }}>
+                  Report Contents
                 </h4>
 
-                {/* Checkboxes for report options */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                  gap: '12px'
+                }}>
                   {[
-                    { key: 'includeActiveHabits', icon: '🎯', label: 'Active Habits Count' },
-                    { key: 'includeCompletedHabits', icon: '✅', label: 'Completed Habits Count' },
-                    { key: 'includeInterests', icon: '⭐', label: 'Your Interests' },
-                    { key: 'includeMediaLibrary', icon: '🎬', label: 'Media Library Stats (Watch Later, Currently Watching, Finished)' },
-                    { key: 'includeCounters', icon: '🔢', label: 'Counters Summary (Longest streak, Total counters)' }
-                  ].map(option => (
-                    <label
-                      key={option.key}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        cursor: isLoading ? 'not-allowed' : 'pointer',
-                        padding: '12px',
-                        borderRadius: '10px',
-                        background: reportSettings[option.key] ? '#fff5eb' : 'white',
-                        border: `2px solid ${reportSettings[option.key] ? '#ff6b35' : '#e0e0e0'}`,
-                        transition: 'all 0.2s',
-                        opacity: isLoading ? 0.6 : 1
-                      }}
-                      onClick={() => !isLoading && handleReportSettingChange(option.key)}
-                    >
-                      <div style={{
-                        width: '20px',
-                        height: '20px',
-                        borderRadius: '4px',
-                        border: `2px solid ${reportSettings[option.key] ? '#ff6b35' : '#ddd'}`,
-                        background: reportSettings[option.key] ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)' : 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        boxShadow: reportSettings[option.key] ? '0 2px 8px rgba(255, 107, 53, 0.3)' : 'none',
-                        transition: 'all 0.2s'
-                      }}>
-                        {reportSettings[option.key] && (
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 14 14"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M11.6666 3.5L5.24992 9.91667L2.33325 7"
-                              stroke="white"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
+                    { key: 'includeActiveHabits', icon: '🎯', label: 'Active Habits' },
+                    { key: 'includeCompletedHabits', icon: '✓', label: 'Completed' },
+                    { key: 'includeInterests', icon: '⭐', label: 'Interests' },
+                    { key: 'includeMediaLibrary', icon: '🎬', label: 'Media' },
+                    { key: 'includeCounters', icon: '📊', label: 'Counters' }
+                  ].map(option => {
+                    const isSelected = reportSettings[option.key];
+                    return (
+                      <button
+                        key={option.key}
+                        onClick={() => !isLoading && handleReportSettingChange(option.key)}
+                        disabled={isLoading}
+                        type="button"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '10px',
+                          padding: '24px 16px',
+                          border: isSelected ? '1.5px solid #ff6b35' : '1px solid #d2d2d7',
+                          borderRadius: '12px',
+                          background: isSelected ? 'rgba(255, 107, 53, 0.05)' : '#ffffff',
+                          cursor: isLoading ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                          opacity: isLoading ? 0.5 : 1,
+                          position: 'relative'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isLoading) {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.borderColor = isSelected ? '#ff6b35' : '#a1a1a6';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isLoading) {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.borderColor = isSelected ? '#ff6b35' : '#d2d2d7';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }
+                        }}
+                      >
+                        {isSelected && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            width: '18px',
+                            height: '18px',
+                            borderRadius: '50%',
+                            background: '#ff6b35',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: '11px',
+                            fontWeight: '700'
+                          }}>
+                            ✓
+                          </div>
                         )}
-                      </div>
-                      <span style={{ fontSize: '20px', flexShrink: 0 }}>{option.icon}</span>
-                      <span style={{
-                        fontSize: '14px',
-                        fontWeight: reportSettings[option.key] ? '600' : '500',
-                        color: reportSettings[option.key] ? '#ff6b35' : '#555',
-                        flex: 1
-                      }}>
-                        {option.label}
-                      </span>
-                    </label>
-                  ))}
+                        <span style={{
+                          fontSize: '28px',
+                          filter: isSelected ? 'none' : 'grayscale(0.3) opacity(0.7)',
+                          transition: 'filter 0.2s'
+                        }}>
+                          {option.icon}
+                        </span>
+                        <div style={{
+                          fontSize: '15px',
+                          fontWeight: isSelected ? '600' : '500',
+                          color: isSelected ? '#1d1d1f' : '#6e6e73',
+                          textAlign: 'center',
+                          lineHeight: '1.3'
+                        }}>
+                          {option.label}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Automatic Reports */}
+              {/* Automatic Reports - Clean Section */}
               <div style={{
-                background: '#f0f9ff',
+                background: '#f5f5f7',
                 borderRadius: '16px',
-                padding: '20px',
-                marginBottom: '24px',
-                border: '2px solid #bfdbfe'
+                padding: '24px',
+                marginBottom: '32px'
               }}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  marginBottom: '16px'
+                  marginBottom: reportSettings.automaticReports ? '24px' : '0'
                 }}>
-                  <h4 style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#333',
-                    margin: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}>
-                    ⚡ Automatic Reports
-                  </h4>
+                  <div>
+                    <h4 style={{
+                      fontSize: '17px',
+                      fontWeight: '600',
+                      color: '#1d1d1f',
+                      margin: 0,
+                      marginBottom: '4px'
+                    }}>
+                      Automatic Delivery
+                    </h4>
+                    <p style={{
+                      fontSize: '14px',
+                      color: '#86868b',
+                      margin: 0
+                    }}>
+                      Schedule regular reports
+                    </p>
+                  </div>
+
                   <div
                     onClick={() => !isLoading && handleReportSettingChange('automaticReports')}
                     style={{
-                      width: '50px',
-                      height: '26px',
-                      borderRadius: '13px',
-                      background: reportSettings.automaticReports
-                        ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)'
-                        : '#ddd',
+                      width: '51px',
+                      height: '31px',
+                      borderRadius: '15.5px',
+                      background: reportSettings.automaticReports ? '#ff6b35' : '#d1d1d6',
                       cursor: isLoading ? 'not-allowed' : 'pointer',
                       position: 'relative',
-                      transition: 'all 0.3s',
-                      opacity: isLoading ? 0.6 : 1
+                      transition: 'background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      opacity: isLoading ? 0.5 : 1
                     }}
                   >
                     <div style={{
-                      width: '22px',
-                      height: '22px',
+                      width: '27px',
+                      height: '27px',
                       borderRadius: '50%',
-                      background: 'white',
+                      background: '#ffffff',
                       position: 'absolute',
                       top: '2px',
-                      left: reportSettings.automaticReports ? '26px' : '2px',
-                      transition: 'left 0.3s',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                      left: reportSettings.automaticReports ? '22px' : '2px',
+                      transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: '0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3)'
                     }} />
                   </div>
                 </div>
 
                 {reportSettings.automaticReports && (
                   <div style={{
-                    marginTop: '16px',
-                    paddingTop: '16px',
-                    borderTop: '1px solid #bfdbfe'
+                    paddingTop: '24px',
+                    borderTop: '1px solid #d2d2d7'
                   }}>
                     <p style={{
                       fontSize: '13px',
-                      color: '#666',
+                      color: '#86868b',
                       marginBottom: '12px',
-                      fontWeight: '500'
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em'
                     }}>
-                      📅 Frequency:
+                      Frequency
                     </p>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      <button
-                        onClick={() => !isLoading && handleFrequencyChange('weekly')}
-                        disabled={isLoading}
-                        style={{
-                          flex: 1,
-                          padding: '12px',
-                          border: `2px solid ${reportSettings.reportFrequency === 'weekly' ? '#ff6b35' : '#e0e0e0'}`,
-                          borderRadius: '10px',
-                          background: reportSettings.reportFrequency === 'weekly'
-                            ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)'
-                            : 'white',
-                          color: reportSettings.reportFrequency === 'weekly' ? 'white' : '#555',
-                          fontSize: '14px',
-                          fontWeight: reportSettings.reportFrequency === 'weekly' ? '600' : '500',
-                          cursor: isLoading ? 'not-allowed' : 'pointer',
-                          transition: 'all 0.2s',
-                          opacity: isLoading ? 0.6 : 1
-                        }}
-                      >
-                        📅 Weekly
-                      </button>
-                      <button
-                        onClick={() => !isLoading && handleFrequencyChange('monthly')}
-                        disabled={isLoading}
-                        style={{
-                          flex: 1,
-                          padding: '12px',
-                          border: `2px solid ${reportSettings.reportFrequency === 'monthly' ? '#ff6b35' : '#e0e0e0'}`,
-                          borderRadius: '10px',
-                          background: reportSettings.reportFrequency === 'monthly'
-                            ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)'
-                            : 'white',
-                          color: reportSettings.reportFrequency === 'monthly' ? 'white' : '#555',
-                          fontSize: '14px',
-                          fontWeight: reportSettings.reportFrequency === 'monthly' ? '600' : '500',
-                          cursor: isLoading ? 'not-allowed' : 'pointer',
-                          transition: 'all 0.2s',
-                          opacity: isLoading ? 0.6 : 1
-                        }}
-                      >
-                        📆 Monthly
-                      </button>
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                      {[
+                        { value: 'weekly', label: 'Weekly' },
+                        { value: 'monthly', label: 'Monthly' }
+                      ].map(freq => {
+                        const isActive = reportSettings.reportFrequency === freq.value;
+                        return (
+                          <button
+                            key={freq.value}
+                            onClick={() => !isLoading && handleFrequencyChange(freq.value)}
+                            disabled={isLoading}
+                            style={{
+                              flex: 1,
+                              padding: '12px',
+                              border: '1px solid #d2d2d7',
+                              borderRadius: '10px',
+                              background: isActive ? '#ffffff' : '#f5f5f7',
+                              color: isActive ? '#1d1d1f' : '#86868b',
+                              fontSize: '15px',
+                              fontWeight: isActive ? '600' : '500',
+                              cursor: isLoading ? 'not-allowed' : 'pointer',
+                              transition: 'all 0.2s',
+                              opacity: isLoading ? 0.5 : 1,
+                              boxShadow: isActive ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isLoading && !isActive) {
+                                e.currentTarget.style.background = '#ffffff';
+                                e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.06)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isLoading && !isActive) {
+                                e.currentTarget.style.background = '#f5f5f7';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }
+                            }}
+                          >
+                            {freq.label}
+                          </button>
+                        );
+                      })}
                     </div>
-                    <p style={{
-                      fontSize: '12px',
-                      color: '#666',
-                      marginTop: '12px',
-                      padding: '8px 12px',
-                      background: 'rgba(255, 255, 255, 0.6)',
-                      borderRadius: '8px',
+                    <div style={{
+                      padding: '12px 16px',
+                      background: '#ffffff',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      color: '#6e6e73',
                       lineHeight: '1.5'
                     }}>
-                      ℹ️ Reports will be automatically sent to your email <strong>{profileData.email}</strong> every {reportSettings.reportFrequency === 'weekly' ? 'Monday morning' : 'first day of the month'}.
-                    </p>
+                      Reports sent to <strong style={{ color: '#1d1d1f' }}>{profileData.email}</strong> every {reportSettings.reportFrequency === 'weekly' ? 'Monday' : '1st of the month'}.
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons - Apple Style */}
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button
                   onClick={handleSaveReportSettings}
                   disabled={isLoading}
                   style={{
                     flex: 1,
-                    padding: '14px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: isLoading ? '#999' : '#ff6b35',
-                    background: isLoading ? '#f0f0f0' : 'white',
-                    border: '2px solid #ff6b35',
+                    padding: '14px 24px',
+                    fontSize: '17px',
+                    fontWeight: '500',
+                    color: '#ff6b35',
+                    background: '#ffffff',
+                    border: '1px solid #d2d2d7',
                     borderRadius: '12px',
                     cursor: isLoading ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
                     transition: 'all 0.2s',
-                    opacity: isLoading ? 0.6 : 1
+                    opacity: isLoading ? 0.5 : 1
                   }}
                   onMouseEnter={(e) => {
                     if (!isLoading) {
-                      e.currentTarget.style.background = '#fff5eb';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.background = '#f5f5f7';
+                      e.currentTarget.style.borderColor = '#ff6b35';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isLoading) {
-                      e.currentTarget.style.background = 'white';
-                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.background = '#ffffff';
+                      e.currentTarget.style.borderColor = '#d2d2d7';
                     }
                   }}
                 >
-                  {isLoading ? 'Saving...' : '💾 Save Settings'}
+                  {isLoading ? 'Saving...' : 'Save Settings'}
                 </button>
                 <button
                   onClick={handleGenerateReport}
                   disabled={isLoading}
                   style={{
                     flex: 1,
-                    padding: '14px',
-                    fontSize: '16px',
+                    padding: '14px 24px',
+                    fontSize: '17px',
                     fontWeight: '600',
-                    color: 'white',
-                    background: isLoading ? '#ccc' : 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)',
+                    color: '#ffffff',
+                    background: isLoading ? '#d2d2d7' : '#ff6b35',
                     border: 'none',
                     borderRadius: '12px',
                     cursor: isLoading ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: isLoading ? 'none' : '0 4px 12px rgba(255, 107, 53, 0.3)',
                     transition: 'all 0.2s',
-                    opacity: isLoading ? 0.6 : 1
+                    opacity: isLoading ? 0.5 : 1,
+                    boxShadow: isLoading ? 'none' : '0 2px 8px rgba(255, 107, 53, 0.3)'
                   }}
                   onMouseEnter={(e) => {
                     if (!isLoading) {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 107, 53, 0.4)';
+                      e.currentTarget.style.background = '#ff8247';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 107, 53, 0.4)';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isLoading) {
+                      e.currentTarget.style.background = '#ff6b35';
                       e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 107, 53, 0.3)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(255, 107, 53, 0.3)';
                     }
                   }}
                 >
-                  {isLoading ? 'Generating...' : '📧 Generate & Send Report Now'}
+                  {isLoading ? 'Generating...' : 'Generate Report'}
                 </button>
               </div>
             </div>
