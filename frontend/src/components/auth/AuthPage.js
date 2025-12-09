@@ -592,29 +592,48 @@ const AuthPage = () => {
                   marginBottom: '20px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <input
-                    type="checkbox"
-                    id="rememberMe"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    disabled={isLoading}
-                    style={{
-                      cursor: isLoading ? 'not-allowed' : 'pointer',
-                      width: '18px',
-                      height: '18px',
-                      accentColor: '#ff6b35',
-                      opacity: isLoading ? 0.6 : 1
-                    }}
-                  />
+                  gap: '10px',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isLoading ? 0.6 : 1
+                }}
+                onClick={() => !isLoading && setRememberMe(!rememberMe)}
+                >
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '4px',
+                    border: `2px solid ${rememberMe ? '#ff6b35' : '#ddd'}`,
+                    background: rememberMe ? 'linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%)' : 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0,
+                    boxShadow: rememberMe ? '0 2px 8px rgba(255, 107, 53, 0.3)' : 'none'
+                  }}>
+                    {rememberMe && (
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M11.6666 3.5L5.24992 9.91667L2.33325 7"
+                          stroke="white"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </div>
                   <label
-                    htmlFor="rememberMe"
                     style={{
                       fontSize: '14px',
                       color: '#666',
                       cursor: isLoading ? 'not-allowed' : 'pointer',
-                      opacity: isLoading ? 0.6 : 1,
                       userSelect: 'none',
                       fontWeight: '500'
                     }}
