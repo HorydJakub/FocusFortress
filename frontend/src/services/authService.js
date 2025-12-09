@@ -117,7 +117,39 @@ const authService = {
     } catch (error) {
       throw error.response?.data?.message || 'Failed to delete custom interest';
     }
-  }
+  },
+
+  // Report Management
+  getReportSettings: async () => {
+    try {
+      const response = await api.get('/user/report-settings');
+      return response.data;
+    } catch (error) {
+      // Return null if settings don't exist yet
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error.response?.data?.message || 'Failed to fetch report settings';
+    }
+  },
+
+  saveReportSettings: async (settings) => {
+    try {
+      const response = await api.post('/user/report-settings', settings);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || 'Failed to save report settings';
+    }
+  },
+
+  generateReport: async (settings) => {
+    try {
+      const response = await api.post('/user/generate-report', settings);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || 'Failed to generate report';
+    }
+  },
 };
 
 export default authService;
