@@ -1,0 +1,215 @@
+[
+  {
+    "category": "Zdrowie fizyczne",
+    "subcategories": [
+      {
+        "name": "Siłownia",
+        "habits": [
+          { "name": "Trening siłowy", "description": "Sesja na wolnych ciężarach lub maszynach 45–60 min." },
+          { "name": "Full body workout", "description": "Trening całego ciała 3 podstawowe ćwiczenia." }
+        ]
+      },
+      {
+        "name": "Cardio",
+        "habits": [
+          { "name": "Bieganie", "description": "Cardio co najmniej 20 minut spokojnym tempem." },
+          { "name": "Jazda na rowerze", "description": "Trening lub dojazdy min. 30 minut łącznie." }
+        ]
+      },
+      {
+        "name": "Mobilność",
+        "habits": [
+          { "name": "Rozciąganie", "description": "Stretching całego ciała 10–15 minut." },
+          { "name": "Rolowanie mięśni", "description": "Foam rolling głównych partii 10 minut." }
+        ]
+      },
+      {
+        "name": "Ruch codzienny",
+        "habits": [
+          { "name": "10k kroków", "description": "Łącznie 10 000 kroków dziennie." },
+          { "name": "Schody zamiast windy", "description": "Wybieram schody przy każdej okazji." }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "Zdrowie psychiczne",
+    "subcategories": [
+      {
+        "name": "Medytacja",
+        "habits": [
+          { "name": "Medytacja 10 min", "description": "Skupiona medytacja z timerem." },
+          { "name": "Skan ciała", "description": "Body scan w ciszy 10–15 minut." }
+        ]
+      },
+      {
+        "name": "Oddech",
+        "habits": [
+          { "name": "Ćwiczenia oddechowe", "description": "Świadome oddychanie 5–10 minut." },
+          { "name": "Box breathing 4-4-4-4", "description": "Wdech–wstrzymanie–wydech–wstrzymanie po 4 sekundy." }
+        ]
+      },
+      {
+        "name": "Emocje",
+        "habits": [
+          { "name": "Dziennik nastroju", "description": "Krótka skala i opis emocji dnia." },
+          { "name": "Wdzięczność", "description": "Spisuję 3 rzeczy, za które dziękuję." }
+        ]
+      },
+      {
+        "name": "Relaks",
+        "habits": [
+          { "name": "Spacer uważności", "description": "10–20 minut bez telefonu, w skupieniu." },
+          { "name": "Czas offline", "description": "Minimum 30 minut relaksu bez ekranów." }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "Dieta i odżywianie",
+    "subcategories": [
+      {
+        "name": "Nawodnienie",
+        "habits": [
+          { "name": "Piję 2L wody", "description": "Realizuję dzienny cel nawodnienia." },
+          { "name": "Woda po przebudzeniu", "description": "1 szklanka wody zaraz po wstaniu." }
+        ]
+      },
+      {
+        "name": "Posiłki",
+        "habits": [
+          { "name": "Śniadanie białkowe", "description": "Śniadanie z min. 25 g białka." },
+          { "name": "Warzywa do posiłków", "description": "Co najmniej 5 porcji warzyw dziennie." }
+        ]
+      },
+      {
+        "name": "Ograniczenia",
+        "habits": [
+          { "name": "Bez słodyczy", "description": "Dzień bez słodkich przekąsek." },
+          { "name": "Bez fast foodu", "description": "Unikam dań typu fast food." }
+        ]
+      },
+      {
+        "name": "Planowanie",
+        "habits": [
+          { "name": "Plan posiłków", "description": "Układam menu na jutro." },
+          { "name": "Meal prep", "description": "Przygotowuję lunch do pracy/szkoły." }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "Rozwój osobisty",
+    "subcategories": [
+      {
+        "name": "Języki",
+        "habits": [
+          { "name": "Nauka języka 20 min", "description": "Aplikacja/fiszki ze SRS." },
+          { "name": "Powtórka słówek", "description": "Przegląd talii 10–15 minut." }
+        ]
+      },
+      {
+        "name": "Czytanie",
+        "habits": [
+          { "name": "Czytam 20 stron", "description": "Książka rozwojowa lub beletrystyka." },
+          { "name": "Audiobook 15 min", "description": "Słucham wartościowej treści." }
+        ]
+      },
+      {
+        "name": "Umiejętności",
+        "habits": [
+          { "name": "Kurs online 30 min", "description": "Lekcja na platformie e-learningowej." },
+          { "name": "Side-projekt 30 min", "description": "Praca nad własnym projektem." }
+        ]
+      },
+      {
+        "name": "Refleksja",
+        "habits": [
+          { "name": "Piszę dziennik", "description": "Krótka refleksja i wnioski z dnia." },
+          { "name": "Przegląd tygodnia", "description": "Ocena postępów i plan na kolejny tydzień." }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "Cyfrowa higiena",
+    "subcategories": [
+      {
+        "name": "Social media",
+        "habits": [
+          { "name": "Limit social media 30 min", "description": "Ustawiony i dotrzymany dzienny limit." },
+          { "name": "Godzina bez telefonu", "description": "60 minut całkiem offline w ciągu dnia." }
+        ]
+      },
+      {
+        "name": "Sen cyfrowy",
+        "habits": [
+          { "name": "Telefon poza sypialnią", "description": "Ładuję urządzenie poza sypialnią." },
+          { "name": "Tryb Nie przeszkadzać", "description": "Włączam DND od 21:00." }
+        ]
+      },
+      {
+        "name": "Konsumpcja treści",
+        "habits": [
+          { "name": "Bez scrolla rano", "description": "Pierwsza godzina dnia bez feedów." },
+          { "name": "Bez scrolla przed snem", "description": "Ostatnia godzina dnia bez sociali." }
+        ]
+      },
+      {
+        "name": "Porządek cyfrowy",
+        "habits": [
+          { "name": "Inbox zero 10 min", "description": "Szybkie czyszczenie skrzynki." },
+          { "name": "Porządek na pulpicie", "description": "Segreguję pliki i foldery." }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "Rytm dnia i produktywność",
+    "subcategories": [
+      {
+        "name": "Poranek",
+        "habits": [
+          { "name": "Pobudka przed 6:00", "description": "Wczesne wstawanie dla stałego rytmu." },
+          { "name": "Poranna rutyna", "description": "Stały zestaw czynności po pobudce." }
+        ]
+      },
+      {
+        "name": "Planowanie",
+        "habits": [
+          { "name": "Plan dnia", "description": "Spisuję zadania i blokuję czas." },
+          { "name": "Top 3 priorytety", "description": "Wybieram trzy kluczowe zadania." }
+        ]
+      },
+      {
+        "name": "Praca w blokach",
+        "habits": [
+          { "name": "Blok Pomodoro", "description": "Co najmniej 1 pełny blok w skupieniu." },
+          { "name": "Przerwy aktywne", "description": "Krótka rozgrzewka co godzinę." }
+        ]
+      },
+      {
+        "name": "Wieczór",
+        "habits": [
+          { "name": "3 sukcesy dnia", "description": "Zapisuję trzy rzeczy, które się udały." },
+          { "name": "Sen przed 23:00", "description": "Kładę się spać przed 23:00." }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "Abstynencja i samokontrola",
+    "subcategories": [
+      {
+        "name": "Uzależnienia",
+        "habits": [
+          { "name": "Nie palę papierosów", "description": "Dzień bez nikotyny" },
+          { "name": "Nie piję alkoholu", "description": "Dzień w pełnej trzeźwości" },
+          { "name": "Brak pornografii", "description": "Zero treści pornograficznych" },
+          { "name": "Brak masturbacji (NoFap)", "description": "Trzymanie kontroli nad impulsami" },
+          { "name": "Brak hazardu", "description": "Dzień bez grania lub zakładów" }
+        ]
+      }
+    ]
+  }
+]

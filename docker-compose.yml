@@ -1,0 +1,62 @@
+services:
+  # --- BAZA DANYCH ---
+  mysqldb:
+    image: mysql:8.0
+    restart: always
+    command: --event-scheduler=ON --log-bin-trust-function-creators=1
+    environment:
+      MYSQL_DATABASE: twoja_baza
+      MYSQL_USER: twoj_user
+      MYSQL_PASSWORD: twoje_haslo
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # --- BACKEND ---
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysqldb
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/twoja_baza?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: twoj_user
+      SPRING_DATASOURCE_PASSWORD: twoje_haslo
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
+      SPRING_MAIL_USERNAME: ""
+      SPRING_MAIL_PASSWORD: ""
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: false
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: false
+
+  # --- FRONTEND ---
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - app
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    ports:
+      - "8081:80"  # Dostępny pod portem 8081, żeby nie gryzł się z backendem (8080)
+    environment:
+      PMA_HOST: mysqldb
+    depends_on:
+      - mysqldb
+
+  mailhog:
+    image: mailhog/mailhog
+    restart: always
+    ports:
+      - "1025:1025" # backend
+      - "8025:8025" # front
+
+volumes:
+  db_data:
