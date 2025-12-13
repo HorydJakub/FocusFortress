@@ -24,18 +24,13 @@ public class DataInitializer implements CommandLineRunner {
     private final HabitRepository habitRepository;
     private final HabitProgressRepository habitProgressRepository;
     private final CounterRepository counterRepository;
-    // Usunięto repository mediów zgodnie z życzeniem
-
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        // 1. Najpierw instalujemy logikę bazy danych (niezależnie od danych)
         initTriggersAndEvents();
-
-        // 2. Potem dodajemy dane (tylko jeśli baza jest pusta)
         if (categoryRepository.count() == 0) {
             seedData();
         }
