@@ -1,7 +1,7 @@
 package com.focusfortress.config;
 
 import com.focusfortress.security.JwtAuthenticationFilter;
-import com.focusfortress.security.OAuth2LoginSuccessHandler;
+// import com.focusfortress.security.OAuth2LoginSuccessHandler;  // <- na razie niepotrzebne
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,10 +25,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
-    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    // private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler; // <- wyłączone
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
@@ -39,15 +40,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/interests", "/api/interests/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
-                        // Allow access to OAuth2 login endpoints
-                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        // .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll() // na razie niepotrzebne
                         .requestMatchers("/admin/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated()
                 )
-                // OAuth2 Login configuration
-                .oauth2Login(oauth2 -> oauth2
-                        .successHandler(oAuth2LoginSuccessHandler)
-                )
+                // .oauth2Login(oauth2 -> oauth2   // <- CAŁY BLOK OAuth2 komentarz / usunięty
+                //         .successHandler(oAuth2LoginSuccessHandler)
+                // )
                 .userDetailsService(userDetailsService);
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
