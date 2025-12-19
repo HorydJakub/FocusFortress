@@ -32,7 +32,7 @@ const Habits = () => {
     categoryId: null,
     subcategoryId: null,
     icon: '🎯',
-    durationDays: 21
+    durationDays: 60
   });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
