@@ -1,0 +1,41 @@
+# Docker Profile Configuration
+
+# Database (MySQL in Docker)
+spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:mysql://db:3306/focusfortress}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME:focusfortress}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:focusfortress}
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# JPA/Hibernate
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect
+
+# Email (MailHog)
+spring.mail.host=${SPRING_MAIL_HOST:localhost}
+spring.mail.port=${SPRING_MAIL_PORT:1025}
+spring.mail.username=
+spring.mail.password=
+spring.mail.properties.mail.smtp.auth=false
+spring.mail.properties.mail.smtp.starttls.enable=false
+
+# Disable H2 console in Docker
+spring.h2.console.enabled=false
+
+# Server
+server.port=8080
+
+# JWT Configuration
+jwt.secret=your-super-secret-key-should-be-long-and-secure-here
+jwt.expiration=86400000
+
+# YouTube API
+youtube.api.key=YOUR_YOUTUBE_API_KEY_HERE
+youtube.api.base-url=https://www.googleapis.com/youtube/v3
+
+# Google OAuth Configuration
+spring.security.oauth2.client.registration.google.client-id=YOUR_GOOGLE_CLIENT_ID_HERE
+spring.security.oauth2.client.registration.google.client-secret=YOUR_GOOGLE_CLIENT_SECRET_HERE
+spring.security.oauth2.client.registration.google.scope=email,profile
+spring.security.oauth2.client.registration.google.redirect-uri={baseUrl}/login/oauth2/code/google
+
