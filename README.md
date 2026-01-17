@@ -7,6 +7,119 @@ A comprehensive productivity and habit-tracking application built with Spring Bo
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.2-brightgreen.svg)
 ![React](https://img.shields.io/badge/React-18.2.0-blue.svg)
 
+## 🚀 Getting Started
+
+### ⚙️ Configuration Setup (Required First)
+
+Before running the application, you need to create configuration files:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/FocusFortress.git
+   cd FocusFortress
+   ```
+
+2. **Copy example configuration files:**
+   ```bash
+   cd backend/src/main/resources
+   cp application.properties.example application.properties
+   cp application-docker.properties.example application-docker.properties
+   ```
+
+3. **Edit `application.properties` and `application-docker.properties`:**
+   - Replace `YOUR_YOUTUBE_API_KEY_HERE` with your YouTube Data API v3 key
+     - Get it from: https://console.cloud.google.com/apis/credentials
+   - Replace `YOUR_GOOGLE_CLIENT_ID_HERE` and `YOUR_GOOGLE_CLIENT_SECRET_HERE` with your Google OAuth credentials
+     - Get them from: https://console.cloud.google.com/apis/credentials
+   - Update `jwt.secret` with a secure random string (at least 64 characters)
+
+### 🐳 Docker Setup (Recommended way to run the project)
+
+Run FocusFortress using Docker Compose:
+
+```bash
+
+# Start all services
+docker compose up --build
+```
+
+**Access the application:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8080
+- MailHog: http://localhost:8025
+- MySQL: localhost:3306
+
+**Stop the application:**
+```bash
+docker compose down
+```
+---
+
+### 💻 Manual Setup (Alternative)
+
+**Prerequisites:**
+- Java 17 or higher
+- Node.js 16+ and npm
+- Maven 3.6+
+- (Optional) MySQL 8.0+
+
+#### Backend Setup
+
+1. **Configure application properties**
+   
+   If you haven't already, copy the example files:
+   ```bash
+   cd backend/src/main/resources
+   cp application.properties.example application.properties
+   cp application-docker.properties.example application-docker.properties
+   ```
+   
+   Edit `backend/src/main/resources/application.properties`:
+   ```properties
+   # Update JWT secret for production
+   jwt.secret=your-secret-key-here
+   
+   # Configure YouTube API key
+   youtube.api.key=your-youtube-api-key
+   
+   # Configure Google OAuth
+   spring.security.oauth2.client.registration.google.client-id=your-client-id
+   spring.security.oauth2.client.registration.google.client-secret=your-client-secret
+   
+   # For MySQL (optional)
+   spring.datasource.url=jdbc:mysql://localhost:3306/focusfortress
+   spring.datasource.username=your-username
+   spring.datasource.password=your-password
+   ```
+
+2. **Build and run the backend**
+   ```bash
+   cd backend
+   mvn clean install
+   mvn spring-boot:run
+   ```
+
+   The backend will start at `http://localhost:8080`
+
+#### Frontend Setup
+
+1. **Install dependencies**
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **Configure API endpoint**
+   
+   Edit `frontend/src/services/api.js` if needed (default: `http://localhost:8080`)
+
+3. **Start the development server**
+   ```bash
+   npm start
+   ```
+
+   The frontend will start at `http://localhost:3000`
+
 ## ✨ Features
 
 
@@ -66,86 +179,6 @@ A comprehensive productivity and habit-tracking application built with Spring Bo
 - **Lucide React** (Icons)
 - **Emoji Picker React**
 
-## 🚀 Getting Started
-
-### 🐳 Docker Setup (Recommended)
-
-The easiest way to run FocusFortress is using Docker Compose:
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/FocusFortress.git
-cd FocusFortress
-
-# Start all services
-docker compose up --build
-```
-
-**Access the application:**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8080
-- MailHog: http://localhost:8025
-- MySQL: localhost:3306
-
-**Stop the application:**
-```bash
-docker compose down
-```
----
-
-### 💻 Manual Setup (Alternative)
-
-**Prerequisites:**
-- Java 17 or higher
-- Node.js 16+ and npm
-- Maven 3.6+
-- (Optional) MySQL 8.0+
-
-#### Backend Setup
-
-1. **Configure application properties**
-   
-   Edit `backend/src/main/resources/application.properties`:
-   ```properties
-   # Update JWT secret for production
-   jwt.secret=your-secret-key-here
-   
-   # Configure YouTube API key
-   youtube.api.key=your-youtube-api-key
-   
-   # For MySQL (optional)
-   spring.datasource.url=jdbc:mysql://localhost:3306/focusfortress
-   spring.datasource.username=your-username
-   spring.datasource.password=your-password
-   ```
-
-2. **Build and run the backend**
-   ```bash
-   cd backend
-   mvn clean install
-   mvn spring-boot:run
-   ```
-
-   The backend will start at `http://localhost:8080`
-
-#### Frontend Setup
-
-1. **Install dependencies**
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-2. **Configure API endpoint**
-   
-   Edit `frontend/src/services/api.js` if needed (default: `http://localhost:8080`)
-
-3. **Start the development server**
-   ```bash
-   npm start
-   ```
-
-   The frontend will start at `http://localhost:3000`
 
 ## 📁 Project Structure
 

@@ -37,8 +37,9 @@ build/
 ### Mac OS ###
 .DS_Store
 
-# Spring-boot
+# Spring-boot configuration files (keep .example files in git)
 application.properties
+application-docker.properties
 
 # Other
 .idea
@@ -52,3 +53,4 @@ frontend/.env
 # Logs
 *.log
 /frontend/public/index.html
+/backend/src/main/resources/application-docker.properties
