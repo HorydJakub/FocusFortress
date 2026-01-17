@@ -68,21 +68,42 @@ A comprehensive productivity and habit-tracking application built with Spring Bo
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### 🐳 Docker Setup (Recommended)
+
+The easiest way to run FocusFortress is using Docker Compose:
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/FocusFortress.git
+cd FocusFortress
+
+# Start all services
+docker compose up --build
+```
+
+**Access the application:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8080
+- MailHog: http://localhost:8025
+- MySQL: localhost:3306
+
+**Stop the application:**
+```bash
+docker compose down
+```
+---
+
+### 💻 Manual Setup (Alternative)
+
+**Prerequisites:**
 - Java 17 or higher
 - Node.js 16+ and npm
 - Maven 3.6+
-- (Optional) MySQL 8.0+ for production
+- (Optional) MySQL 8.0+
 
-### Backend Setup
+#### Backend Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/FocusFortress.git
-   cd FocusFortress
-   ```
-
-2. **Configure application properties**
+1. **Configure application properties**
    
    Edit `backend/src/main/resources/application.properties`:
    ```properties
@@ -98,7 +119,7 @@ A comprehensive productivity and habit-tracking application built with Spring Bo
    spring.datasource.password=your-password
    ```
 
-3. **Build and run the backend**
+2. **Build and run the backend**
    ```bash
    cd backend
    mvn clean install
@@ -107,7 +128,7 @@ A comprehensive productivity and habit-tracking application built with Spring Bo
 
    The backend will start at `http://localhost:8080`
 
-### Frontend Setup
+#### Frontend Setup
 
 1. **Install dependencies**
    ```bash

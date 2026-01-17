@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import api from '../../services/api';
 import { Image, RefreshCw, BookmarkPlus, Play, CheckCircle } from 'lucide-react';
 import VideoTile from './VideoTile';
@@ -28,36 +28,11 @@ const MyMedia = () => {
   const REFRESH_DATE_KEY = 'focusfortress_refresh_date';
   const INITIAL_FETCH_FLAG_KEY = 'focusfortress_initial_tiles_fetched'; // Track if we've already fetched initial tiles
 
-  useEffect(() => {
-    fetchLibrary();
-    fetchInterests();
-    loadCachedRecommendations();
-    loadRefreshCount();
-
-    // Listen for interest changes from Settings
-    const handleRefreshMediaTiles = () => {
-      console.log('Interests changed - showing notification to refresh');
-      fetchInterests(); // Refresh the interests chips
-      setShowRefreshNotification(true); // Show notification instead of auto-refreshing
-
-      // Auto-hide notification after 10 seconds
-      setTimeout(() => {
-        setShowRefreshNotification(false);
-      }, 10000);
-    };
-
-    window.addEventListener('refreshMediaTiles', handleRefreshMediaTiles);
-
-    return () => {
-      window.removeEventListener('refreshMediaTiles', handleRefreshMediaTiles);
-    };
-  }, []);
-
   const getTodayDateString = () => {
     return new Date().toISOString().split('T')[0];
   };
 
-  const loadRefreshCount = () => {
+  const loadRefreshCount = useCallback(() => {
     const storedDate = localStorage.getItem(REFRESH_DATE_KEY);
     const today = getTodayDateString();
 
@@ -72,9 +47,33 @@ const MyMedia = () => {
       setRefreshCount(count);
       setRefreshLimitReached(count >= MAX_DAILY_REFRESHES);
     }
-  };
+  }, [REFRESH_DATE_KEY, REFRESH_COUNT_KEY, MAX_DAILY_REFRESHES]);
 
-  const loadCachedRecommendations = () => {
+  const saveCachedRecommendations = useCallback((recs) => {
+    try {
+      localStorage.setItem(RECOMMENDATIONS_CACHE_KEY, JSON.stringify(recs));
+    } catch (e) {
+      console.error('Failed to cache recommendations:', e);
+    }
+  }, [RECOMMENDATIONS_CACHE_KEY]);
+
+  const fetchRecommendationsOnFirstLogin = useCallback(async () => {
+    setLoadingRecommendations(true);
+    try {
+      const res = await api.get('/media/tiles?limit=12');
+      const recs = res.data || [];
+      setRecommendations(recs);
+      saveCachedRecommendations(recs);
+    } catch (e) {
+      console.error('Failed to fetch initial recommendations:', e);
+    } finally {
+      // Mark that we've completed the initial fetch (even if failed)
+      localStorage.setItem(INITIAL_FETCH_FLAG_KEY, 'true');
+      setLoadingRecommendations(false);
+    }
+  }, [INITIAL_FETCH_FLAG_KEY, saveCachedRecommendations]);
+
+  const loadCachedRecommendations = useCallback(() => {
     try {
       const cached = localStorage.getItem(RECOMMENDATIONS_CACHE_KEY);
       if (cached) {
@@ -102,31 +101,33 @@ const MyMedia = () => {
         setLoadingRecommendations(false);
       }
     }
-  };
+  }, [RECOMMENDATIONS_CACHE_KEY, INITIAL_FETCH_FLAG_KEY, fetchRecommendationsOnFirstLogin]);
 
-  const fetchRecommendationsOnFirstLogin = async () => {
-    setLoadingRecommendations(true);
-    try {
-      const res = await api.get('/media/tiles?limit=12');
-      const recs = res.data || [];
-      setRecommendations(recs);
-      saveCachedRecommendations(recs);
-    } catch (e) {
-      console.error('Failed to fetch initial recommendations:', e);
-    } finally {
-      // Mark that we've completed the initial fetch (even if failed)
-      localStorage.setItem(INITIAL_FETCH_FLAG_KEY, 'true');
-      setLoadingRecommendations(false);
-    }
-  };
+  useEffect(() => {
+    fetchLibrary();
+    fetchInterests();
+    loadCachedRecommendations();
+    loadRefreshCount();
 
-  const saveCachedRecommendations = (recs) => {
-    try {
-      localStorage.setItem(RECOMMENDATIONS_CACHE_KEY, JSON.stringify(recs));
-    } catch (e) {
-      console.error('Failed to cache recommendations:', e);
-    }
-  };
+    // Listen for interest changes from Settings
+    const handleRefreshMediaTiles = () => {
+      console.log('Interests changed - showing notification to refresh');
+      fetchInterests(); // Refresh the interests chips
+      setShowRefreshNotification(true); // Show notification instead of auto-refreshing
+
+      // Auto-hide notification after 10 seconds
+      setTimeout(() => {
+        setShowRefreshNotification(false);
+      }, 10000);
+    };
+
+    window.addEventListener('refreshMediaTiles', handleRefreshMediaTiles);
+
+    return () => {
+      window.removeEventListener('refreshMediaTiles', handleRefreshMediaTiles);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadCachedRecommendations, loadRefreshCount]);
 
   const incrementRefreshCount = () => {
     const today = getTodayDateString();
