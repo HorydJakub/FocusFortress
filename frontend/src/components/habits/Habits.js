@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import api from '../../services/api';
-import { Target, Plus, X, Trash2, Edit2, ChevronRight, FolderOpen, Smile, ArrowLeft, MoreVertical, CheckCircle, Flame, Layers, Info, Award, Trophy, Star } from 'lucide-react';
+import { Target, Plus, X, Trash2, Edit2, ChevronRight, FolderOpen, Smile, ArrowLeft, MoreVertical, CheckCircle, Flame, Layers, Info, Trophy, Star } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 
 const Habits = () => {

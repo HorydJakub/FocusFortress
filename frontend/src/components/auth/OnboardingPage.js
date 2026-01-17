@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import { ChevronRight, CheckCircle, User, Calendar, Smile } from 'lucide-react';
+import { ChevronRight, CheckCircle, User, Smile } from 'lucide-react';
 
 const OnboardingPage = () => {
   const [profileData, setProfileData] = useState({

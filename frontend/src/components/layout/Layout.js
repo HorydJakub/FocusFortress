@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Home, Target, Clock, Image, LogOut } from 'lucide-react';
@@ -13,7 +13,7 @@ const Layout = ({ children }) => {
   const [displayName, setDisplayName] = useState(''); // State to hold the real name from DB
 
   // Function to fetch the user's name from the backend
-  const fetchUserName = async () => {
+  const fetchUserName = useCallback(async () => {
     try {
       if (user) {
         const response = await api.get('/user/profile');
@@ -24,7 +24,7 @@ const Layout = ({ children }) => {
     } catch (error) {
       console.error("Failed to fetch user name", error);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     // 1. Fetch name on component mount
@@ -39,7 +39,7 @@ const Layout = ({ children }) => {
     return () => {
       window.removeEventListener('profileUpdated', handleProfileUpdate);
     };
-  }, [user]);
+  }, [fetchUserName]);
 
   const handleLogout = () => {
     logout();
