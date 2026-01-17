@@ -52,3 +52,4 @@ frontend/.env
 # Logs
 *.log
 /frontend/public/index.html
+/backend/src/main/resources/application-docker.properties
