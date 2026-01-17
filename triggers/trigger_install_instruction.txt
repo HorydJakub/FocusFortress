@@ -1,0 +1,35 @@
+========================================
+MYSQL TRIGGERS - INSTALLATION
+========================================
+
+PREREQUISITES:
+--------------
+- Docker containers must be running (docker compose up --build)
+
+INSTALLATION STEPS:
+-------------------
+
+1. Enable trigger creation in MySQL:
+
+   docker exec focusfortress-db mysql -u root -prootpassword -e "SET GLOBAL log_bin_trust_function_creators = 1;"
+
+2. Install trigger1 (auto-update updated_at field):
+
+   docker exec -i focusfortress-db mysql -u focusfortress -pfocusfortress focusfortress < triggers/trigger1.sql
+
+   This trigger automatically updates the updated_at timestamp in user_media_library table
+
+3. Install trigger2 (prevent user deletion with habits):
+
+   docker exec -i focusfortress-db mysql -u focusfortress -pfocusfortress focusfortress < triggers/trigger2.sql
+
+   This trigger prevents deletion of users who have active habits
+
+TEST TRIGGERS:
+--------------
+
+Run the automated test script:
+
+./triggers/test_triggers.sh
+
+This will test both triggers and verify they are working correctly
