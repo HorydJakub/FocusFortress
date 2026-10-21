@@ -1,0 +1,211 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+# Cancel superseded runs of the same branch / PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege by default; jobs opt in to anything more.
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: "17"
+  NODE_VERSION: "20"
+
+jobs:
+  backend-tests:
+    name: Backend tests (unit · API · integration)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      checks: write # publish JUnit results as a check run
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      # Surefire: *Test.java (unit + API on H2, profile "test")
+      # Failsafe: *IT.java (Testcontainers MySQL; Docker is available on ubuntu-latest)
+      - name: Build and test (mvn verify)
+        run: mvn -B -ntp verify
+
+      - name: Publish test results
+        if: ${{ !cancelled() }}
+        uses: mikepenz/action-junit-report@v5
+        with:
+          check_name: Backend test results
+          report_paths: |
+            target/surefire-reports/TEST-*.xml
+            target/failsafe-reports/TEST-*.xml
+          detailed_summary: true
+          include_passed: false
+          require_tests: true
+          # Fork PRs get a read-only token: fall back to annotations only.
+          annotate_only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+
+      - name: Coverage summary
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          summarize() {
+            local label="$1" csv="$2"
+            [ -f "$csv" ] || return 0
+            awk -F, -v label="$label" 'NR > 1 {
+                im += $4; ic += $5; bm += $6; bc += $7; lm += $8; lc += $9
+              }
+              function pct(c, m) { return (c + m) == 0 ? "n/a" : sprintf("%.1f%%", 100 * c / (c + m)) }
+              END {
+                printf "| %s | %s | %s | %s |\n", label, pct(ic, im), pct(bc, bm), pct(lc, lm)
+              }' "$csv"
+          }
+          {
+            echo "### JaCoCo coverage"
+            echo ""
+            echo "| Suite | Instructions | Branches | Lines |"
+            echo "|---|---|---|---|"
+            summarize "Unit + API (Surefire)" target/site/jacoco/jacoco.csv
+            summarize "Integration (Failsafe)" target/site/jacoco-it/jacoco.csv
+            echo ""
+            echo "_Full HTML reports are attached to this run as the \`jacoco-report\` artifact._"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload JaCoCo HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: |
+            target/site/jacoco/
+            target/site/jacoco-it/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload raw test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  frontend-build:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # No npm cache: frontend/package-lock.json is not committed (see .gitignore),
+      # and setup-node's npm cache requires a lock file.
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+
+      - name: Production build
+        # CRA treats lint warnings as errors when CI=true; keep warnings non-fatal.
+        env:
+          CI: "false"
+        run: npm run build
+
+  e2e:
+    name: E2E tests (Playwright · docker compose)
+    needs: backend-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      BASE_URL: http://localhost:3000
+      API_URL: http://localhost:8080/api
+      MAILHOG_URL: http://localhost:8025
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Spring configuration from examples
+        working-directory: backend/src/main/resources
+        run: |
+          cp application.properties.example application.properties
+          cp application-docker.properties.example application-docker.properties
+
+      - name: Start stack (db, mailhog, backend, frontend)
+        run: docker compose up --build -d
+
+      - name: Wait for backend and frontend
+        shell: bash
+        run: |
+          wait_for() {
+            local name="$1" url="$2" timeout="${3:-300}" start=$SECONDS
+            echo "Waiting for $name at $url (timeout ${timeout}s)..."
+            until curl -fsS -o /dev/null "$url"; do
+              if (( SECONDS - start >= timeout )); then
+                echo "::error::$name did not become ready within ${timeout}s"
+                return 1
+              fi
+              sleep 5
+            done
+            echo "$name is up after $(( SECONDS - start ))s"
+          }
+          wait_for backend  "$API_URL/interests" 300
+          wait_for frontend "$BASE_URL"          300
+          wait_for mailhog  "$MAILHOG_URL/api/v2/messages" 60
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install Playwright and browsers
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: e2e
+        run: npm test
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Dump docker compose logs
+        if: failure()
+        run: |
+          docker compose ps -a
+          docker compose logs --no-color --timestamps
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose down -v --remove-orphans
