@@ -197,7 +197,9 @@ FocusFortress ships with a layered automated test suite that runs on every push 
 | **Integration** | `backend/src/test/java/com/focusfortress/it` | `*IT.java` | Testcontainers (MySQL), GreenMail | `mvn verify` (Failsafe) |
 | **End-to-end** | `e2e/` | Playwright specs | Playwright (TypeScript) against the full Docker Compose stack | `npm test` in `e2e/` |
 
-Unit tests cover the business rules in isolation: JWT generation/validation (expiry, remember-me lifetime, tampered and foreign-signed tokens), habit streak and completion logic (gaps, day boundaries, duplicate check-ins), counter ownership and partial updates, registration rules (password policy, interests 3–7, verification token flow) and DTO mapping. Known defects are captured as `@Disabled("BUG: ...")` tests with the *expected* behaviour, so they turn green once fixed.
+Unit tests cover the business rules in isolation: JWT generation/validation (expiry, remember-me lifetime, tampered and foreign-signed tokens), habit streak and completion logic (gaps, day boundaries, duplicate check-ins), counter ownership and partial updates, registration rules (password policy, interests 3–7, verification token flow) and DTO mapping. Defects found by the suite were first captured as `@Disabled("BUG: ...")` tests with the *expected* behaviour and then fixed, so each one is now guarded by a passing regression test.
+
+> **Upgrading an existing database?** Run `triggers/migration_2026_10.sql` (instructions inside): it removes duplicate habit check-ins and migrates categories to per-user ownership.
 
 ### Running the tests locally
 

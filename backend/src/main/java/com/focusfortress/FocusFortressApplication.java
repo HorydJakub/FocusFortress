@@ -1,8 +1,9 @@
 package com.focusfortress;
 
 import org.springframework.boot.SpringApplication;
-import java.util.TimeZone;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import java.util.TimeZone;
 
 @SpringBootApplication
 public class FocusFortressApplication {

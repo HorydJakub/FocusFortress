@@ -1,8 +1,14 @@
--- Migration: per-user habit categories
--- Run once on an existing database, after the backend has started with the new code
--- (Hibernate adds categories.owner_id, but ddl-auto=update never drops the old unique index on name).
---
---   docker exec -i focusfortress-db mysql -u root -prootpassword focusfortress < triggers/migration_per_user_categories.sql
+-- Migration for databases created before the 2026-10 test-suite fixes. Safe to run more than once.
+-- 1. Start the backend once with the new code (Hibernate adds categories.owner_id).
+-- 2. Run this script:
+--      docker exec -i focusfortress-db mysql -u root -prootpassword focusfortress < triggers/migration_2026_10.sql
+-- 3. Restart the backend, so Hibernate can add UNIQUE(habit_id, date) to habit_progress.
+-- 4. Reinstall trigger2 (it now counts only active habits), see trigger_install_instruction.txt.
+
+-- 0. Remove duplicate check-ins (same habit, same day) left by the old race condition
+DELETE hp FROM habit_progress hp
+JOIN habit_progress keep
+  ON keep.habit_id = hp.habit_id AND keep.date = hp.date AND keep.id < hp.id;
 
 -- 1. Drop the old global UNIQUE(name) index on categories
 SET @old_index = (

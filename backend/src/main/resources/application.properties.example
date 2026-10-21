@@ -36,6 +36,7 @@ spring.mail.port=1025
 spring.mail.host=localhost
 # Email Configuration (Mailhog)
 
-jwt.expiration=86400000
 jwt.secret=your-super-secret-key-should-be-long-and-secure-here
 
+# Public URL of the backend, used in e-mail verification links
+app.backend-url=http://localhost:8080

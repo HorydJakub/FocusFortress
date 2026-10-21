@@ -39,12 +39,22 @@ public class GlobalExceptionHandler {
     }
 
     // 409 - Conflict
-    @ExceptionHandler({ IllegalArgumentException.class, DataIntegrityViolationException.class })
+    @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Object> handleConflict(RuntimeException ex) {
         Map<String, Object> body = new HashMap<>();
         body.put("status", 409);
         body.put("error", "Conflict");
         body.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    // 409 - Conflict (database constraint) - the raw SQL message is not sent to the client
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Object> handleDataIntegrity(DataIntegrityViolationException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", 409);
+        body.put("error", "Conflict");
+        body.put("message", "The operation conflicts with existing data (it may still be in use)");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
