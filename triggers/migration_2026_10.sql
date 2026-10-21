@@ -28,14 +28,32 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- 2. Give existing habit categories an owner: the user whose habits use them.
---    Categories without habits stay ownerless (shared interest catalog).
-UPDATE categories c
-JOIN (
-    SELECT category_id, MIN(user_id) AS user_id
-    FROM habits
-    WHERE category_id IS NOT NULL
-    GROUP BY category_id
-) h ON h.category_id = c.id
-SET c.owner_id = h.user_id
-WHERE c.owner_id IS NULL;
+-- 2. Habits may still point to ownerless categories (the shared interest catalog or old global categories).
+--    Give each such user an own copy of the category and subcategory and move the habits to it;
+--    the shared catalog itself is left untouched.
+INSERT INTO categories (name, icon, owner_id)
+SELECT DISTINCT c.name, c.icon, h.user_id
+FROM habits h
+JOIN categories c ON c.id = h.category_id AND c.owner_id IS NULL
+WHERE NOT EXISTS (SELECT 1 FROM categories own WHERE own.owner_id = h.user_id AND own.name = c.name);
+
+INSERT INTO subcategories (name, icon, category_id)
+SELECT DISTINCT s.name, s.icon, own.id
+FROM habits h
+JOIN subcategories s ON s.id = h.subcategory_id
+JOIN categories c ON c.id = s.category_id AND c.owner_id IS NULL
+JOIN categories own ON own.owner_id = h.user_id AND own.name = c.name
+WHERE NOT EXISTS (SELECT 1 FROM subcategories x WHERE x.category_id = own.id AND x.name = s.name);
+
+UPDATE habits h
+JOIN subcategories s ON s.id = h.subcategory_id
+JOIN categories c ON c.id = s.category_id AND c.owner_id IS NULL
+JOIN categories own ON own.owner_id = h.user_id AND own.name = c.name
+JOIN subcategories own_s ON own_s.category_id = own.id AND own_s.name = s.name
+SET h.category_id = own.id, h.subcategory_id = own_s.id;
+
+-- Habits with a category but without a subcategory
+UPDATE habits h
+JOIN categories c ON c.id = h.category_id AND c.owner_id IS NULL
+JOIN categories own ON own.owner_id = h.user_id AND own.name = c.name
+SET h.category_id = own.id;
