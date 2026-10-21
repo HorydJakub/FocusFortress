@@ -71,8 +71,6 @@ class SecurityApiTest extends ApiTestBase {
                     .statusCode(not(successful()));
         }
 
-        @Disabled("BUG: GET /api/habits without/with invalid JWT -> observed 302 redirect to "
-                + "/oauth2/authorization/google, expected 401 (oauth2Login() has no API AuthenticationEntryPoint)")
         @ParameterizedTest(name = "{0}")
         @EnumSource(InvalidCredentials.class)
         @DisplayName("API answers 401 Unauthorized")

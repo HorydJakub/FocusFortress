@@ -77,8 +77,6 @@ class UserProfileApiTest extends ApiTestBase {
                     .body("name", equalTo("Test User"));
         }
 
-        @Disabled("BUG: PUT /api/user/profile with blank name -> observed 500 (TransactionSystemException from "
-                + "entity validation at commit), expected 400 (UserProfileDTO has no validation constraints)")
         @Test
         @DisplayName("PUT rejects a blank name with 400")
         void rejectsBlankName() {

@@ -151,18 +151,15 @@ class HabitProgressServiceTest {
         }
 
         @Test
-        @DisplayName("is 0 when the most recent entry was yesterday (current behaviour)")
-        void yesterdayOnlyIsCurrentlyZero() {
+        @DisplayName("is 0 when the most recent entry is older than yesterday")
+        void brokenStreakIsZero() {
             givenHabitExists();
-            givenHistory(List.of(progress(habit, today.minusDays(1)), progress(habit, today.minusDays(2))));
+            givenHistory(List.of(progress(habit, today.minusDays(2)), progress(habit, today.minusDays(3))));
 
             assertThat(service.getCurrentStreak(HABIT_ID, OWNER_EMAIL)).isZero();
         }
 
         @Test
-        @Disabled("BUG: getCurrentStreak counts back from today only, so a streak that is still alive "
-                + "(done yesterday, not yet today) is reported as 0 until the user checks in. "
-                + "This also unlocks the 'duration cannot change after start' guard in HabitService#updateHabit.")
         @DisplayName("keeps an unbroken streak alive until the end of today")
         void streakStillAliveBeforeTodaysCheckIn() {
             givenHabitExists();
@@ -206,7 +203,7 @@ class HabitProgressServiceTest {
             int streak = service.markDone(HABIT_ID, OWNER_EMAIL);
 
             ArgumentCaptor<HabitProgress> saved = ArgumentCaptor.forClass(HabitProgress.class);
-            verify(habitProgressRepository).save(saved.capture());
+            verify(habitProgressRepository).saveAndFlush(saved.capture());
             assertThat(saved.getValue().getHabit()).isSameAs(habit);
             assertThat(saved.getValue().getDate()).isEqualTo(today);
             assertThat(streak).isEqualTo(3);
@@ -262,7 +259,7 @@ class HabitProgressServiceTest {
             assertThatThrownBy(() -> service.markDone(HABIT_ID, OWNER_EMAIL))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Already marked as done today");
-            verify(habitProgressRepository, never()).save(any());
+            verify(habitProgressRepository, never()).saveAndFlush(any());
         }
 
         @Test
@@ -274,7 +271,7 @@ class HabitProgressServiceTest {
             assertThatThrownBy(() -> service.markDone(HABIT_ID, OWNER_EMAIL))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("This habit is already completed");
-            verify(habitProgressRepository, never()).save(any());
+            verify(habitProgressRepository, never()).saveAndFlush(any());
         }
 
         @Test
@@ -285,7 +282,7 @@ class HabitProgressServiceTest {
             assertThatThrownBy(() -> service.markDone(HABIT_ID, OTHER_EMAIL))
                     .isInstanceOf(ForbiddenException.class)
                     .hasMessage("Access denied");
-            verify(habitProgressRepository, never()).save(any());
+            verify(habitProgressRepository, never()).saveAndFlush(any());
         }
 
         @Test

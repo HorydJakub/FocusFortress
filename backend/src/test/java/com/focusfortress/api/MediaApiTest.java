@@ -135,8 +135,6 @@ class MediaApiTest extends ApiTestBase {
             as(alice).get("/media/library").then().body("id", not(hasItem((int) id)));
         }
 
-        @Disabled("BUG: GET /api/media/library?status=NOPE -> observed 409 Conflict, expected 400 "
-                + "(type-mismatch IllegalArgumentException is caught by the generic 409 handler)")
         @Test
         @DisplayName("GET with an unknown status value returns 400")
         void rejectsUnknownStatusFilter() {

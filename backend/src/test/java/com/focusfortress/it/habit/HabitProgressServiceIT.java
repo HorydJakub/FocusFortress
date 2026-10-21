@@ -169,11 +169,6 @@ class HabitProgressServiceIT extends MySqlIntegrationTestBase {
     }
 
     @Test
-    @Disabled("BUG: getCurrentStreak() counts back from TODAY only, so a habit checked in on each of the last 5 days "
-            + "but not yet today reports streak 0. HabitService.updateHabit relies on it ('currentStreak > 0') to lock "
-            + "durationDays after the habit started - every morning before the check-in the lock is open and the "
-            + "duration can be changed (the UI streak also shows 0). Expected: an unbroken streak ending yesterday "
-            + "still counts as 'started'.")
     @DisplayName("duration of a started habit stays locked before today's check-in")
     void durationLockedWhileStreakAlive() {
         User user = data.verifiedUser();
@@ -195,12 +190,6 @@ class HabitProgressServiceIT extends MySqlIntegrationTestBase {
     }
 
     @Test
-    @Disabled("BUG: race condition - markDone() does check-then-insert without a UNIQUE(habit_id, date) constraint. "
-            + "Two concurrent requests (double click, two devices) both pass findByHabitAndDate() and both INSERT, "
-            + "leaving duplicate rows for one day (reproduced: 8 parallel calls -> 8 rows). Consequences, also verified: "
-            + "every later markDone() for that day throws IncorrectResultSizeDataAccessException (unhandled -> HTTP 500) "
-            + "and getCurrentStreak() collapses to 1 because the duplicate breaks the consecutive-day walk. "
-            + "Fix: unique constraint on habit_progress(habit_id, date).")
     @DisplayName("concurrent check-ins on the same day produce exactly one progress row")
     void concurrentCheckInsCreateOneRow() throws Exception {
         User user = data.verifiedUser();

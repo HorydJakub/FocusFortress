@@ -155,8 +155,6 @@ class InterestApiTest extends ApiTestBase {
                     .body("subcategoryName", containsInAnyOrder("Meditation", "Reading"));
         }
 
-        @Disabled("BUG: DELETE /api/user/interests/{id} of another user -> observed 409 Conflict, "
-                + "expected 403/404 (ownership violation is thrown as IllegalArgumentException)")
         @Test
         @DisplayName("DELETE of another user's interest is refused with 403/404")
         void cannotDeleteOtherUsersInterest() {
@@ -180,16 +178,12 @@ class InterestApiTest extends ApiTestBase {
             as(user).get("/user/interests").then().body("id", hasItem(aliceInterestId));
         }
 
-        @Disabled("BUG: DELETE /api/user/interests/{unknownId} -> observed 409 Conflict, expected 404")
         @Test
         @DisplayName("DELETE of an unknown interest returns 404")
         void unknownInterest() {
             as(user).delete("/user/interests/{id}", Long.MAX_VALUE).then().statusCode(404);
         }
 
-        @Disabled("BUG: POST /api/user/interests/custom with a name another user already used -> observed 409 "
-                + "leaking raw SQL constraint error, expected 200 (custom interests share one global 'Custom' "
-                + "category with a unique (name, category_id) constraint)")
         @Test
         @DisplayName("two users can each add a custom interest with the same name")
         void customInterestNamesArePerUser() {

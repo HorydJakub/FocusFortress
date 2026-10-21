@@ -145,10 +145,6 @@ class UserDeletionGuardTriggerIT extends MySqlIntegrationTestBase {
     }
 
     @Test
-    @Disabled("BUG: trigger2 message, comment and trigger_install_instruction.txt all say 'active habits', but the "
-            + "trigger counts ALL habits (no 'done = false' filter). A user whose habits are all completed is "
-            + "rejected with the misleading 'Cannot delete user with active habits'. Expected: the trigger stays "
-            + "silent (the delete may then still fail on the habits FK, SQLSTATE 23000 - a separate concern).")
     @DisplayName("a user with only COMPLETED habits is not rejected as having 'active habits'")
     void completedHabitsAreNotActiveHabits() {
         User user = data.verifiedUser();

@@ -11,6 +11,7 @@ import com.focusfortress.repository.UserInterestRepository;
 import com.focusfortress.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.focusfortress.exception.NotFoundException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -276,13 +277,17 @@ public class InterestService {
                     return categoryRepository.save(newCategory);
                 });
 
-        // Create the custom subcategory with the provided emoji
-        Subcategory customSubcategory = Subcategory.builder()
-                .name(name)
-                .icon(emoji)
-                .category(customCategory)
-                .build();
-        customSubcategory = subcategoryRepository.save(customSubcategory);
+        // Custom subcategories are shared: reuse one another user already created
+        Subcategory customSubcategory = subcategoryRepository.findByNameAndCategoryId(name, customCategory.getId())
+                .orElseGet(() -> subcategoryRepository.save(Subcategory.builder()
+                        .name(name)
+                        .icon(emoji)
+                        .category(customCategory)
+                        .build()));
+
+        if (userInterestRepository.existsByUserIdAndSubcategoryId(user.getId(), customSubcategory.getId())) {
+            throw new IllegalStateException("Interest already added: " + name);
+        }
 
         // Create user interest
         UserInterest userInterest = UserInterest.builder()
@@ -302,11 +307,11 @@ public class InterestService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         UserInterest userInterest = userInterestRepository.findById(interestId)
-                .orElseThrow(() -> new IllegalArgumentException("Interest not found"));
+                .orElseThrow(() -> new NotFoundException("Interest not found"));
 
-        // Verify the interest belongs to the user
+        // Another user's interest is reported as not found, so ids of other users' data don't leak
         if (!userInterest.getUser().getId().equals(user.getId())) {
-            throw new IllegalArgumentException("Interest does not belong to the current user");
+            throw new NotFoundException("Interest not found");
         }
 
         // Check if it's a custom interest (from Custom category)
@@ -315,8 +320,8 @@ public class InterestService {
         // Delete the user interest
         userInterestRepository.delete(userInterest);
 
-        // If it's a custom interest, also delete the subcategory since it's user-specific
-        if (isCustom) {
+        // If it's a custom interest nobody else uses, also delete its subcategory
+        if (isCustom && !userInterestRepository.existsBySubcategoryId(userInterest.getSubcategory().getId())) {
             Subcategory customSubcategory = userInterest.getSubcategory();
             subcategoryRepository.delete(customSubcategory);
             log.info("Deleted custom interest '{}' and its subcategory for user {}",

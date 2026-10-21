@@ -284,8 +284,6 @@ class HabitApiTest extends ApiTestBase {
                     .statusCode(404);
         }
 
-        @Disabled("BUG: PUT /api/habits/{id} without categoryId -> observed 409 'The given id must not be null', "
-                + "expected 200 like on create, which accepts a habit without category (update calls findById(null))")
         @Test
         @DisplayName("habit without category can be updated")
         void updatesHabitWithoutCategory() {

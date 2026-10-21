@@ -177,8 +177,6 @@ class HabitServiceTest {
         }
 
         @Test
-        @Disabled("BUG: saveHabit does not check that the subcategory belongs to the category "
-                + "(updateHabit does), so inconsistent habits can be created.")
         @DisplayName("rejects a subcategory that belongs to a different category")
         void mismatchedSubcategory() {
             givenOwnerExists();
@@ -293,8 +291,6 @@ class HabitServiceTest {
         }
 
         @Test
-        @Disabled("BUG: updateHabit has no duplicate-name check (saveHabit has one), "
-                + "so renaming lets a user end up with two habits of the same name.")
         @DisplayName("rejects renaming to a name already used by another habit of the user")
         void duplicateNameOnRename() {
             givenExistingHabit();
@@ -310,8 +306,6 @@ class HabitServiceTest {
         }
 
         @Test
-        @Disabled("BUG: saveHabit allows habits without category/subcategory, but updateHabit "
-                + "unconditionally resolves both ids, so an uncategorised habit can never be edited.")
         @DisplayName("allows editing a habit that has no category")
         void editUncategorisedHabit() {
             existing.setCategory(null);

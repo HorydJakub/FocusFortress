@@ -15,13 +15,13 @@ echo "======================================"
 
 docker exec focusfortress-db mysql -u focusfortress -pfocusfortress focusfortress << 'EOF' 2>&1 | grep -v "Warning"
 INSERT INTO user_media_library (video_id, title, status, user_email, added_at, updated_at)
-VALUES ('test1', 'Test', 'TO_WATCH', 'test@test.com', NOW(), NOW());
+VALUES ('test1', 'Test', 'WATCH_LATER', 'test@test.com', NOW(), NOW());
 
 SELECT 'BEFORE UPDATE:' as '';
 SELECT video_id, status, updated_at FROM user_media_library WHERE video_id = 'test1';
 
 DO SLEEP(2);
-UPDATE user_media_library SET status = 'WATCHED' WHERE video_id = 'test1';
+UPDATE user_media_library SET status = 'FINISHED' WHERE video_id = 'test1';
 
 SELECT 'AFTER UPDATE (updated_at should be newer):' as '';
 SELECT video_id, status, updated_at FROM user_media_library WHERE video_id = 'test1';

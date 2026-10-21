@@ -72,6 +72,8 @@ public class HabitService {
                     .orElseThrow(() -> new NotFoundException("Subcategory not found"));
         }
 
+        validateSubcategoryBelongsToCategory(category, subcategory);
+
         Habit habit = Habit.builder()
                 .name(habitDTO.getName())
                 .description(habitDTO.getDescription())
@@ -104,15 +106,25 @@ public class HabitService {
             throw new IllegalStateException("Cannot change duration after starting the habit. Delete and recreate to restart.");
         }
 
-        Category category = categoryRepository.findById(habitDTO.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
-
-        Subcategory subcategory = subcategoryRepository.findById(habitDTO.getSubcategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Subcategory not found"));
-
-        if (!subcategory.getCategory().getId().equals(category.getId())) {
-            throw new IllegalArgumentException("Subcategory does not belong to the selected category");
+        if (!habit.getName().equals(habitDTO.getName())
+                && habitRepository.existsByUserIdAndName(user.getId(), habitDTO.getName())) {
+            throw new IllegalArgumentException("Habit with this name already exists for the user");
         }
+
+        // Category and subcategory are optional, same as on create
+        Category category = null;
+        if (habitDTO.getCategoryId() != null) {
+            category = categoryRepository.findById(habitDTO.getCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+        }
+
+        Subcategory subcategory = null;
+        if (habitDTO.getSubcategoryId() != null) {
+            subcategory = subcategoryRepository.findById(habitDTO.getSubcategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Subcategory not found"));
+        }
+
+        validateSubcategoryBelongsToCategory(category, subcategory);
 
         habit.setName(habitDTO.getName());
         habit.setDescription(habitDTO.getDescription());
@@ -166,6 +178,13 @@ public class HabitService {
         return categories.stream()
                 .map(category -> buildCategoryTree(category, userHabits, email))
                 .collect(Collectors.toList());
+    }
+
+    private void validateSubcategoryBelongsToCategory(Category category, Subcategory subcategory) {
+        if (category != null && subcategory != null
+                && !subcategory.getCategory().getId().equals(category.getId())) {
+            throw new IllegalArgumentException("Subcategory does not belong to the selected category");
+        }
     }
 
     private CategoryTreeDTO buildCategoryTree(Category category, List<Habit> userHabits, String email) {
