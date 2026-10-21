@@ -45,7 +45,6 @@ application-docker.properties
 .idea
 
 # Frontend
-frontend/package-lock.json
 frontend/node_modules/
 frontend/build/
 frontend/.env

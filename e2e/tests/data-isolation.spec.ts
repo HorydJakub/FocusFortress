@@ -25,13 +25,6 @@ test.describe('Data isolation between accounts', () => {
   });
 
   test("another user's custom categories are not visible", async ({ page, otherUser, habitsPage }) => {
-    test.info().annotations.push({
-      type: 'issue',
-      description:
-        'BUG: Category/Subcategory have no owner (CategoryService uses findAll()), so a category one user ' +
-        'creates shows up for everyone – and any user can rename or delete it for all accounts.',
-    });
-    test.fail();
 
     const theirCategory = uniqueName('Their category');
     await otherUser.api.createCategory(theirCategory);

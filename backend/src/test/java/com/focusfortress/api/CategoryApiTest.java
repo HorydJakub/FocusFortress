@@ -3,7 +3,6 @@ package com.focusfortress.api;
 import com.focusfortress.api.support.ApiTestBase;
 import com.focusfortress.api.support.TestUser;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,13 +34,34 @@ class CategoryApiTest extends ApiTestBase {
     class Categories {
 
         @Test
-        @DisplayName("registration seeds the categories of the chosen interests")
-        void registrationSeedsCategories() {
+        @DisplayName("a new user starts without habit categories (interest catalog is not listed)")
+        void newUserHasNoCategories() {
             // default registration picks Meditation, Physics and Reading
             as(user).get("/categories")
                     .then()
                     .statusCode(200)
-                    .body("name", hasItems("Mind & Body", "Natural Sciences", "Skills & Learning"));
+                    .body("name", not(hasItems("Mind & Body", "Natural Sciences", "Skills & Learning")))
+                    .body("size()", equalTo(0));
+        }
+
+        @Test
+        @DisplayName("two users can each have a category with the same name")
+        void categoryNamesArePerUser() {
+            String name = unique("Fitness");
+            as(user).body(category(name)).post("/categories").then().statusCode(201);
+
+            as(auth.registerVerifiedUser()).body(category(name)).post("/categories").then().statusCode(201);
+        }
+
+        @Test
+        @DisplayName("another user's category is invisible in the list and by id")
+        void categoriesAreIsolated() {
+            long id = createCategory(user);
+            TestUser other = auth.registerVerifiedUser();
+
+            as(other).get("/categories").then().body("id", not(hasItem((int) id)));
+            as(other).get("/categories/{id}", id).then().statusCode(404);
+            as(other).body(category(unique("Hijack"))).put("/categories/{id}", id).then().statusCode(404);
         }
 
         @Test
@@ -124,16 +144,15 @@ class CategoryApiTest extends ApiTestBase {
                     .then().statusCode(404);
         }
 
-        @Disabled("BUG: DELETE /api/categories/{id} by a regular USER -> observed 204, expected 403 "
-                + "(categories are global and shared by all users, but writes only require authentication)")
         @Test
-        @DisplayName("regular user cannot delete a shared category")
-        void regularUserCannotDeleteSharedCategory() {
-            long sharedCategoryId = createCategory(user);
+        @DisplayName("another user cannot delete someone else's category")
+        void otherUserCannotDeleteCategory() {
+            long categoryId = createCategory(user);
 
-            as(auth.registerVerifiedUser()).delete("/categories/{id}", sharedCategoryId)
+            as(auth.registerVerifiedUser()).delete("/categories/{id}", categoryId)
                     .then()
-                    .statusCode(403);
+                    .statusCode(404);
+            as(user).get("/categories/{id}", categoryId).then().statusCode(200);
         }
     }
 

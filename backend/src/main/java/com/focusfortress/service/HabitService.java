@@ -62,13 +62,13 @@ public class HabitService {
 
         Category category = null;
         if (habitDTO.getCategoryId() != null) {
-            category = categoryRepository.findById(habitDTO.getCategoryId())
+            category = categoryRepository.findByIdAndOwnerId(habitDTO.getCategoryId(), user.getId())
                     .orElseThrow(() -> new NotFoundException("Category not found"));
         }
 
         Subcategory subcategory = null;
         if (habitDTO.getSubcategoryId() != null) {
-            subcategory = subcategoryRepository.findById(habitDTO.getSubcategoryId())
+            subcategory = subcategoryRepository.findByIdAndCategoryOwnerId(habitDTO.getSubcategoryId(), user.getId())
                     .orElseThrow(() -> new NotFoundException("Subcategory not found"));
         }
 
@@ -114,13 +114,13 @@ public class HabitService {
         // Category and subcategory are optional, same as on create
         Category category = null;
         if (habitDTO.getCategoryId() != null) {
-            category = categoryRepository.findById(habitDTO.getCategoryId())
+            category = categoryRepository.findByIdAndOwnerId(habitDTO.getCategoryId(), user.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
         }
 
         Subcategory subcategory = null;
         if (habitDTO.getSubcategoryId() != null) {
-            subcategory = subcategoryRepository.findById(habitDTO.getSubcategoryId())
+            subcategory = subcategoryRepository.findByIdAndCategoryOwnerId(habitDTO.getSubcategoryId(), user.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Subcategory not found"));
         }
 
@@ -173,7 +173,7 @@ public class HabitService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         List<Habit> userHabits = habitRepository.findByUserId(user.getId());
-        List<Category> categories = categoryRepository.findAll();
+        List<Category> categories = categoryRepository.findByOwnerId(user.getId());
 
         return categories.stream()
                 .map(category -> buildCategoryTree(category, userHabits, email))

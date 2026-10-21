@@ -103,8 +103,8 @@ class HabitServiceTest {
         @DisplayName("maps every DTO field onto a new, not-done habit owned by the caller")
         void mapsDtoToEntity() {
             givenOwnerExists();
-            when(categoryRepository.findById(100L)).thenReturn(Optional.of(category));
-            when(subcategoryRepository.findById(200L)).thenReturn(Optional.of(subcategory));
+            when(categoryRepository.findByIdAndOwnerId(100L, owner.getId())).thenReturn(Optional.of(category));
+            when(subcategoryRepository.findByIdAndCategoryOwnerId(200L, owner.getId())).thenReturn(Optional.of(subcategory));
             when(habitRepository.save(any(Habit.class))).thenAnswer(inv -> inv.getArgument(0));
 
             Habit saved = service.saveHabit(dto("Reading", 100L, 200L, 30), OWNER_EMAIL);
@@ -149,7 +149,7 @@ class HabitServiceTest {
         @DisplayName("fails with NotFoundException for an unknown category")
         void unknownCategory() {
             givenOwnerExists();
-            when(categoryRepository.findById(100L)).thenReturn(Optional.empty());
+            when(categoryRepository.findByIdAndOwnerId(100L, owner.getId())).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.saveHabit(dto("Reading", 100L, null, 7), OWNER_EMAIL))
                     .isInstanceOf(NotFoundException.class)
@@ -160,7 +160,7 @@ class HabitServiceTest {
         @DisplayName("fails with NotFoundException for an unknown subcategory")
         void unknownSubcategory() {
             givenOwnerExists();
-            when(subcategoryRepository.findById(200L)).thenReturn(Optional.empty());
+            when(subcategoryRepository.findByIdAndCategoryOwnerId(200L, owner.getId())).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.saveHabit(dto("Reading", null, 200L, 7), OWNER_EMAIL))
                     .isInstanceOf(NotFoundException.class)
@@ -181,8 +181,8 @@ class HabitServiceTest {
         void mismatchedSubcategory() {
             givenOwnerExists();
             Category otherCategory = category(999L);
-            when(categoryRepository.findById(999L)).thenReturn(Optional.of(otherCategory));
-            when(subcategoryRepository.findById(200L)).thenReturn(Optional.of(subcategory));
+            when(categoryRepository.findByIdAndOwnerId(999L, owner.getId())).thenReturn(Optional.of(otherCategory));
+            when(subcategoryRepository.findByIdAndCategoryOwnerId(200L, owner.getId())).thenReturn(Optional.of(subcategory));
 
             assertThatThrownBy(() -> service.saveHabit(dto("Reading", 999L, 200L, 7), OWNER_EMAIL))
                     .isInstanceOf(IllegalArgumentException.class);
@@ -215,8 +215,8 @@ class HabitServiceTest {
             Category newCategory = category(101L);
             Subcategory newSubcategory = subcategory(201L, newCategory);
             when(habitProgressService.getCurrentStreak(10L, OWNER_EMAIL)).thenReturn(0);
-            when(categoryRepository.findById(101L)).thenReturn(Optional.of(newCategory));
-            when(subcategoryRepository.findById(201L)).thenReturn(Optional.of(newSubcategory));
+            when(categoryRepository.findByIdAndOwnerId(101L, owner.getId())).thenReturn(Optional.of(newCategory));
+            when(subcategoryRepository.findByIdAndCategoryOwnerId(201L, owner.getId())).thenReturn(Optional.of(newSubcategory));
             when(habitRepository.save(existing)).thenReturn(existing);
 
             Habit updated = service.updateHabit(10L, dto("Renamed", 101L, 201L, 60), OWNER_EMAIL);
@@ -232,8 +232,8 @@ class HabitServiceTest {
         void renameStartedHabit() {
             givenExistingHabit();
             when(habitProgressService.getCurrentStreak(10L, OWNER_EMAIL)).thenReturn(5);
-            when(categoryRepository.findById(100L)).thenReturn(Optional.of(category));
-            when(subcategoryRepository.findById(200L)).thenReturn(Optional.of(subcategory));
+            when(categoryRepository.findByIdAndOwnerId(100L, owner.getId())).thenReturn(Optional.of(category));
+            when(subcategoryRepository.findByIdAndCategoryOwnerId(200L, owner.getId())).thenReturn(Optional.of(subcategory));
             when(habitRepository.save(existing)).thenReturn(existing);
 
             Habit updated = service.updateHabit(10L, dto("Renamed", 100L, 200L, 21), OWNER_EMAIL);
@@ -271,8 +271,8 @@ class HabitServiceTest {
             givenExistingHabit();
             Category otherCategory = category(999L);
             when(habitProgressService.getCurrentStreak(10L, OWNER_EMAIL)).thenReturn(0);
-            when(categoryRepository.findById(999L)).thenReturn(Optional.of(otherCategory));
-            when(subcategoryRepository.findById(200L)).thenReturn(Optional.of(subcategory));
+            when(categoryRepository.findByIdAndOwnerId(999L, owner.getId())).thenReturn(Optional.of(otherCategory));
+            when(subcategoryRepository.findByIdAndCategoryOwnerId(200L, owner.getId())).thenReturn(Optional.of(subcategory));
 
             assertThatThrownBy(() -> service.updateHabit(10L, dto("Reading", 999L, 200L, 21), OWNER_EMAIL))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -296,8 +296,8 @@ class HabitServiceTest {
             givenExistingHabit();
             lenient().when(habitRepository.existsByUserIdAndName(owner.getId(), "Taken")).thenReturn(true);
             lenient().when(habitProgressService.getCurrentStreak(10L, OWNER_EMAIL)).thenReturn(0);
-            lenient().when(categoryRepository.findById(100L)).thenReturn(Optional.of(category));
-            lenient().when(subcategoryRepository.findById(200L)).thenReturn(Optional.of(subcategory));
+            lenient().when(categoryRepository.findByIdAndOwnerId(100L, owner.getId())).thenReturn(Optional.of(category));
+            lenient().when(subcategoryRepository.findByIdAndCategoryOwnerId(200L, owner.getId())).thenReturn(Optional.of(subcategory));
             lenient().when(habitRepository.save(existing)).thenReturn(existing);
 
             assertThatThrownBy(() -> service.updateHabit(10L, dto("Taken", 100L, 200L, 21), OWNER_EMAIL))
@@ -382,7 +382,7 @@ class HabitServiceTest {
             Habit uncategorised = habit(11L, owner, 7);
 
             when(habitRepository.findByUserId(owner.getId())).thenReturn(List.of(reading, uncategorised));
-            when(categoryRepository.findAll()).thenReturn(List.of(category));
+            when(categoryRepository.findByOwnerId(owner.getId())).thenReturn(List.of(category));
             when(subcategoryRepository.findByCategoryId(100L)).thenReturn(List.of(subcategory, emptySubcategory));
             when(habitProgressService.getCurrentStreak(10L, OWNER_EMAIL)).thenReturn(4);
 

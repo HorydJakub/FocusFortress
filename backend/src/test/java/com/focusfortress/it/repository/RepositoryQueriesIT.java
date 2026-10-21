@@ -135,7 +135,7 @@ class RepositoryQueriesIT extends MySqlIntegrationTestBase {
         void interestIsUniquePerUser() {
             User user = data.verifiedUser();
             interestService.createInitialInterestsForUser(user, Set.of("Meditation", "Physics", "Sleep"));
-            Subcategory meditation = subcategoryRepository.findByName("Meditation").orElseThrow();
+            Subcategory meditation = subcategoryRepository.findByNameAndCategoryOwnerIsNull("Meditation").orElseThrow();
 
             assertThatThrownBy(() -> userInterestRepository.saveAndFlush(
                     UserInterest.builder().user(user).subcategory(meditation).build()))
@@ -147,7 +147,7 @@ class RepositoryQueriesIT extends MySqlIntegrationTestBase {
         void derivedDelete() {
             User user = data.verifiedUser();
             interestService.createInitialInterestsForUser(user, Set.of("Meditation", "Physics", "Sleep"));
-            Long physicsId = subcategoryRepository.findByName("Physics").orElseThrow().getId();
+            Long physicsId = subcategoryRepository.findByNameAndCategoryOwnerIsNull("Physics").orElseThrow().getId();
 
             assertThatThrownBy(() -> userInterestRepository.deleteByUserIdAndSubcategoryId(user.getId(), physicsId))
                     .as("derived delete outside a transaction")

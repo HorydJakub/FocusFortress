@@ -116,16 +116,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # No npm cache: frontend/package-lock.json is not committed (see .gitignore),
-      # and setup-node's npm cache requires a lock file.
       - name: Set up Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+        run: npm ci
 
       - name: Production build
         # CRA treats lint warnings as errors when CI=true; keep warnings non-fatal.

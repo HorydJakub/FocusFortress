@@ -54,7 +54,7 @@ public class InterestService {
             SubcategoryInfo info = subcategoryMap.get(subcategoryName);
 
             // Find or create category
-            Category category = categoryRepository.findByName(info.categoryName)
+            Category category = categoryRepository.findByNameAndOwnerIsNull(info.categoryName)
                     .orElseGet(() -> {
                         Category newCategory = Category.builder()
                                 .name(info.categoryName)
@@ -218,7 +218,7 @@ public class InterestService {
 
         // Remove interests (hard delete)
         for (String subcategoryName : dto.getRemove()) {
-            Subcategory subcategory = subcategoryRepository.findByName(subcategoryName).orElse(null);
+            Subcategory subcategory = subcategoryRepository.findByNameAndCategoryOwnerIsNull(subcategoryName).orElse(null);
             if (subcategory != null) {
                 userInterestRepository.deleteByUserIdAndSubcategoryId(user.getId(), subcategory.getId());
                 log.info("Removed interest {} for user {}", subcategoryName, email);
@@ -229,7 +229,7 @@ public class InterestService {
         for (String subcategoryName : dto.getAdd()) {
             SubcategoryInfo info = subcategoryMap.get(subcategoryName);
             // Find or create category
-            Category category = categoryRepository.findByName(info.categoryName)
+            Category category = categoryRepository.findByNameAndOwnerIsNull(info.categoryName)
                     .orElseGet(() -> {
                         Category newCategory = Category.builder()
                                 .name(info.categoryName)
@@ -268,7 +268,7 @@ public class InterestService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         // Find or create a "Custom" category for user-defined interests
-        Category customCategory = categoryRepository.findByName("Custom")
+        Category customCategory = categoryRepository.findByNameAndOwnerIsNull("Custom")
                 .orElseGet(() -> {
                     Category newCategory = Category.builder()
                             .name("Custom")
