@@ -2,6 +2,7 @@ package com.focusfortress.service;
 
 import com.focusfortress.dto.UserReportDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -14,8 +15,11 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+    @Value("${app.backend-url:http://localhost:8080}")
+    private String backendUrl;
+
     public void sendVerificationEmail(String to, String token) {
-        String link = "http://localhost:8080/api/auth/verify?token=" + token;
+        String link = backendUrl + "/api/auth/verify?token=" + token;
 
         String html = """
             <!DOCTYPE html>

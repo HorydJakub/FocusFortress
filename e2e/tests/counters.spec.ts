@@ -62,13 +62,6 @@ test.describe('Counters', () => {
     test.use({ timezoneId: 'Asia/Bangkok' });
 
     test('a brand-new counter starts from zero', async ({ countersPage }) => {
-      test.info().annotations.push({
-        type: 'issue',
-        description:
-          'BUG: Counter.startDateTime is a zone-less LocalDateTime in server time (UTC); the browser parses ' +
-          'it as local time, so a new counter starts at +7h in UTC+7 and goes negative west of UTC.',
-      });
-      test.fail();
 
       const name = uniqueName('Fresh start');
       await countersPage.goto();

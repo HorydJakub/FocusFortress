@@ -6,7 +6,9 @@ const authService = {
       const response = await api.post('/auth/register', userData);
       return response.data;
     } catch (error) {
-      throw error.response?.data?.message || 'Registration failed';
+      const data = error.response?.data;
+      const fieldErrors = data?.errors ? Object.values(data.errors).join(' ') : null;
+      throw data?.message || fieldErrors || 'Registration failed';
     }
   },
 

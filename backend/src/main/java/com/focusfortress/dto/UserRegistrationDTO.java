@@ -21,7 +21,6 @@ public class UserRegistrationDTO {
     @Email(message = "Invalid email format")
     private String email;
 
-    @NotNull(message = "Date of birth is required")
     @Past(message = "Date of birth must be in the past")
     private LocalDate dateOfBirth;
 

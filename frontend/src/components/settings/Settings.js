@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle, ChevronRight } from 'lucide-react';
 import authService from '../../services/authService';
+import { API_BASE_URL } from '../../services/api';
 import EmojiPicker from 'emoji-picker-react';
 
 const Settings = ({ isOpen, onClose }) => {
@@ -69,7 +70,7 @@ const Settings = ({ isOpen, onClose }) => {
   const fetchInterests = async () => {
     try {
       // Fetch available interests
-      const response = await fetch('http://localhost:8080/api/interests/subcategories');
+      const response = await fetch(`${API_BASE_URL}/interests/subcategories`);
       if (response.ok) {
         const availableData = await response.json();
         setAvailableInterests(Array.isArray(availableData) ? availableData : []);

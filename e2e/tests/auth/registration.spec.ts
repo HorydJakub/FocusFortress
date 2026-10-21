@@ -41,13 +41,6 @@ test.describe('Registration', () => {
   });
 
   test('date of birth marked "(Optional)" can be left empty', async ({ api, authPage }) => {
-    test.info().annotations.push({
-      type: 'issue',
-      description:
-        'BUG: the form labels Date of Birth "(Optional)" and sends null, but UserRegistrationDTO has ' +
-        '@NotNull on dateOfBirth, so the backend answers 400 and the UI only shows "Registration failed".',
-    });
-    test.fail();
 
     const interests = (await api.interestOptions()).slice(0, 3).map((i) => i.name);
     await authPage.gotoRegistration();

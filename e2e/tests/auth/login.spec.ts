@@ -54,14 +54,6 @@ test.describe('Login', () => {
   });
 
   test('wrong password shows an error message', async ({ api, mailhog, authPage, page }) => {
-    test.info().annotations.push({
-      type: 'issue',
-      description:
-        'BUG: the global axios 401 interceptor (frontend/src/services/api.js) runs ' +
-        "window.location.href = '/login' for the failed /auth/login call itself, reloading the page " +
-        'and wiping the "Invalid email or password" message, so the user gets no feedback.',
-    });
-    test.fail();
 
     const user = await createVerifiedUser(api, mailhog);
     await authPage.goto();

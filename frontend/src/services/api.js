@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+export const BACKEND_URL = API_BASE_URL.replace(/\/api\/?$/, '');
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -29,7 +30,9 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
-      if (error.response.status === 401) {
+      // A 401 from /auth/* (e.g. wrong password) is handled by the form itself
+      const isAuthRequest = error.config?.url?.startsWith('/auth/');
+      if (error.response.status === 401 && !isAuthRequest) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('rememberMe');

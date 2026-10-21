@@ -177,12 +177,12 @@ class UserRegistrationDTOTest {
         }
 
         @Test
-        @DisplayName("date of birth is required")
-        void dateOfBirthRequired() {
+        @DisplayName("date of birth is optional")
+        void dateOfBirthOptional() {
             UserRegistrationDTO dto = valid();
             dto.setDateOfBirth(null);
 
-            assertThat(violatedFields(dto)).contains("dateOfBirth");
+            assertThat(violatedFields(dto)).doesNotContain("dateOfBirth");
         }
     }
 

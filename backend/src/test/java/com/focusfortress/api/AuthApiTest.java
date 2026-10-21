@@ -66,7 +66,7 @@ class AuthApiTest extends ApiTestBase {
                     .then()
                     .statusCode(400)
                     .body("errors.keySet()", hasItems(
-                            "name", "email", "dateOfBirth", "password", "confirmPassword", "selectedInterests"));
+                            "name", "email", "password", "confirmPassword", "selectedInterests"));
         }
 
         @Test
