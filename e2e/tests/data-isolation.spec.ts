@@ -16,7 +16,8 @@ test.describe('Data isolation between accounts', () => {
     await otherUser.api.createCounter({ name: counterName });
 
     await habitsPage.goto();
-    await expect(habitsPage.page.getByRole('heading', { name: "It's a bit empty here!" })).toBeVisible();
+    // A new user has no categories yet, so the page asks to set them up first
+    await expect(habitsPage.page.getByRole('heading', { name: 'You need to set up categories first!' })).toBeVisible();
     await expect(habitsPage.page.getByText(habitName)).toHaveCount(0);
 
     await countersPage.goto();
@@ -24,16 +25,17 @@ test.describe('Data isolation between accounts', () => {
     await expect(countersPage.page.getByText(counterName)).toHaveCount(0);
   });
 
-  test("another user's custom categories are not visible", async ({ page, otherUser, habitsPage }) => {
-
+  test("another user's categories are not visible", async ({ page, api, otherUser, habitsPage }) => {
+    const myCategory = uniqueName('My category');
     const theirCategory = uniqueName('Their category');
+    await api.createCategory(myCategory);
     await otherUser.api.createCategory(theirCategory);
 
     await habitsPage.goto();
     await habitsPage.manageCategoriesButton.click();
     await expect(habitsPage.heading).toHaveText('Manage Categories');
-    // Wait for the grid to render (the user's own interest-based categories) before asserting absence.
-    await expect(page.getByRole('heading', { level: 3 }).first()).toBeVisible();
+    // Wait for the grid to render the user's own category before asserting absence.
+    await expect(page.getByRole('heading', { level: 3, name: myCategory })).toBeVisible();
 
     await expect(page.getByRole('heading', { level: 3, name: theirCategory })).toHaveCount(0, { timeout: 5_000 });
   });
