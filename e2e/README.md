@@ -9,7 +9,7 @@ Browser end-to-end tests built with [Playwright Test](https://playwright.dev) an
 #    dummy OAuth/YouTube keys are fine.
 cp backend/src/main/resources/application.properties.example        backend/src/main/resources/application.properties
 cp backend/src/main/resources/application-docker.properties.example backend/src/main/resources/application-docker.properties
-docker compose up --build -d   # wait for :3000 and :8080/api/interests to answer 200
+docker compose up --build -d   # wait for HTTP 200 on :3000, :8080/api/interests/subcategories and :8025/api/v2/messages
 
 # 2. Run the suite
 cd e2e

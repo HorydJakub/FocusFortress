@@ -57,4 +57,27 @@ test.describe('Counters', () => {
     await expect(countersPage.card(name)).toHaveCount(0);
     await expect(countersPage.emptyState).toBeVisible();
   });
+
+  test.describe('in a non-UTC time zone', () => {
+    test.use({ timezoneId: 'Asia/Bangkok' });
+
+    test('a brand-new counter starts from zero', async ({ countersPage }) => {
+      test.info().annotations.push({
+        type: 'issue',
+        description:
+          'BUG: Counter.startDateTime is a zone-less LocalDateTime in server time (UTC); the browser parses ' +
+          'it as local time, so a new counter starts at +7h in UTC+7 and goes negative west of UTC.',
+      });
+      test.fail();
+
+      const name = uniqueName('Fresh start');
+      await countersPage.goto();
+      await countersPage.createCustomCounter({ name });
+
+      const timer = countersPage.card(name).getByText(/::/).first();
+      // The first render is a static 00::00::00::00 placeholder – wait for the first real tick.
+      await expect(timer).not.toHaveText('00::00::00::00');
+      await expect(timer).toHaveText(/^00::00::00::\d{2}$/, { timeout: 2_000 });
+    });
+  });
 });

@@ -18,6 +18,9 @@ export default defineConfig({
   outputDir: 'test-results',
   use: {
     baseURL: env.baseUrl,
+    // The backend serializes timestamps as zone-less UTC LocalDateTime; pin the browser to UTC so
+    // results don't depend on the machine's time zone (see the counter time-zone BUG test).
+    timezoneId: 'UTC',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
