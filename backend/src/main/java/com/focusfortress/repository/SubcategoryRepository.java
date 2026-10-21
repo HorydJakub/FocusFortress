@@ -12,6 +12,4 @@ public interface SubcategoryRepository extends JpaRepository<Subcategory, Long> 
     Optional<Subcategory> findByNameAndCategoryId(String name, Long categoryId);
     Optional<Subcategory> findByIdAndCategoryOwnerId(Long id, Long ownerId);
 
-    // Shared interest catalog (subcategories of categories without an owner)
-    Optional<Subcategory> findByNameAndCategoryOwnerIsNull(String name);
 }

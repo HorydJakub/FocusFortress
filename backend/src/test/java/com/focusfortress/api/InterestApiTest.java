@@ -97,6 +97,19 @@ class InterestApiTest extends ApiTestBase {
         }
 
         @Test
+        @DisplayName("PUT removes a predefined interest even when someone has a custom interest with the same name")
+        void removesInterestSharingNameWithCustomOne() {
+            as(auth.registerVerifiedUser()).body(Map.of("name", "Physics", "emoji", "🧲"))
+                    .post("/user/interests/custom").then().statusCode(200);
+
+            as(user).body(Map.of("add", List.of(), "remove", List.of("Physics")))
+                    .when().put("/user/interests")
+                    .then()
+                    .statusCode(200)
+                    .body("subcategoryName", containsInAnyOrder("Meditation", "Reading"));
+        }
+
+        @Test
         @DisplayName("PUT rejects adding an interest that is already selected (409) and changes nothing")
         void rejectsDuplicateAddition() {
             as(user).body(Map.of("add", List.of("Meditation", "Hiking"), "remove", List.of()))

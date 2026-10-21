@@ -11,6 +11,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     Optional<Category> findByIdAndOwnerId(Long id, Long ownerId);
     boolean existsByOwnerIdAndName(Long ownerId, String name);
 
-    // Shared interest catalog (categories without an owner)
-    Optional<Category> findByNameAndOwnerIsNull(String name);
+    // Shared interest catalog (categories without an owner). NULL owners don't collide in the
+    // unique index, so concurrent registrations may create a duplicate - always use the oldest one.
+    Optional<Category> findFirstByNameAndOwnerIsNullOrderByIdAsc(String name);
 }

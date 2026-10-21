@@ -54,7 +54,7 @@ public class InterestService {
             SubcategoryInfo info = subcategoryMap.get(subcategoryName);
 
             // Find or create category
-            Category category = categoryRepository.findByNameAndOwnerIsNull(info.categoryName)
+            Category category = categoryRepository.findFirstByNameAndOwnerIsNullOrderByIdAsc(info.categoryName)
                     .orElseGet(() -> {
                         Category newCategory = Category.builder()
                                 .name(info.categoryName)
@@ -216,20 +216,23 @@ public class InterestService {
             throw new IllegalArgumentException(fullErrorMessage);
         }
 
-        // Remove interests (hard delete)
+        // Remove interests (hard delete) - matched among the user's own interests, because a custom
+        // interest may share its name with a predefined one
+        List<UserInterest> userInterests = userInterestRepository.findByUserIdOrderBySelectedAtDesc(user.getId());
         for (String subcategoryName : dto.getRemove()) {
-            Subcategory subcategory = subcategoryRepository.findByNameAndCategoryOwnerIsNull(subcategoryName).orElse(null);
-            if (subcategory != null) {
-                userInterestRepository.deleteByUserIdAndSubcategoryId(user.getId(), subcategory.getId());
-                log.info("Removed interest {} for user {}", subcategoryName, email);
-            }
+            userInterests.stream()
+                    .filter(interest -> interest.getSubcategory().getName().equals(subcategoryName))
+                    .forEach(interest -> {
+                        userInterestRepository.delete(interest);
+                        log.info("Removed interest {} for user {}", subcategoryName, email);
+                    });
         }
 
         // Add new interests
         for (String subcategoryName : dto.getAdd()) {
             SubcategoryInfo info = subcategoryMap.get(subcategoryName);
             // Find or create category
-            Category category = categoryRepository.findByNameAndOwnerIsNull(info.categoryName)
+            Category category = categoryRepository.findFirstByNameAndOwnerIsNullOrderByIdAsc(info.categoryName)
                     .orElseGet(() -> {
                         Category newCategory = Category.builder()
                                 .name(info.categoryName)
@@ -268,7 +271,7 @@ public class InterestService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         // Find or create a "Custom" category for user-defined interests
-        Category customCategory = categoryRepository.findByNameAndOwnerIsNull("Custom")
+        Category customCategory = categoryRepository.findFirstByNameAndOwnerIsNullOrderByIdAsc("Custom")
                 .orElseGet(() -> {
                     Category newCategory = Category.builder()
                             .name("Custom")

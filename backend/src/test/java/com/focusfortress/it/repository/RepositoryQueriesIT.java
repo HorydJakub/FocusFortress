@@ -135,7 +135,7 @@ class RepositoryQueriesIT extends MySqlIntegrationTestBase {
         void interestIsUniquePerUser() {
             User user = data.verifiedUser();
             interestService.createInitialInterestsForUser(user, Set.of("Meditation", "Physics", "Sleep"));
-            Subcategory meditation = subcategoryRepository.findByNameAndCategoryOwnerIsNull("Meditation").orElseThrow();
+            Subcategory meditation = catalogSubcategory("Meditation").orElseThrow();
 
             assertThatThrownBy(() -> userInterestRepository.saveAndFlush(
                     UserInterest.builder().user(user).subcategory(meditation).build()))
@@ -147,7 +147,7 @@ class RepositoryQueriesIT extends MySqlIntegrationTestBase {
         void derivedDelete() {
             User user = data.verifiedUser();
             interestService.createInitialInterestsForUser(user, Set.of("Meditation", "Physics", "Sleep"));
-            Long physicsId = subcategoryRepository.findByNameAndCategoryOwnerIsNull("Physics").orElseThrow().getId();
+            Long physicsId = catalogSubcategory("Physics").orElseThrow().getId();
 
             assertThatThrownBy(() -> userInterestRepository.deleteByUserIdAndSubcategoryId(user.getId(), physicsId))
                     .as("derived delete outside a transaction")
@@ -292,5 +292,11 @@ class RepositoryQueriesIT extends MySqlIntegrationTestBase {
                     .isInstanceOf(DataIntegrityViolationException.class)
                     .hasMessageContaining("uk_counters_user_name");
         }
+    }
+
+    private java.util.Optional<Subcategory> catalogSubcategory(String name) {
+        String categoryName = name.equals("Meditation") ? "Mind & Body" : "Natural Sciences";
+        Long categoryId = categoryRepository.findFirstByNameAndOwnerIsNullOrderByIdAsc(categoryName).orElseThrow().getId();
+        return subcategoryRepository.findByNameAndCategoryId(name, categoryId);
     }
 }
