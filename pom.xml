@@ -229,6 +229,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>${surefire.version}</version>
+                <configuration>
+                    <!-- Use plain classes, not the repackaged Spring Boot jar (BOOT-INF/classes) -->
+                    <classesDirectory>${project.build.outputDirectory}</classesDirectory>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
