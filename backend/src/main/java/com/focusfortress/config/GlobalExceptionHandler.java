@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.validation.FieldError;
 
 import java.util.HashMap;
@@ -27,13 +28,33 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
+    // 400 - Bad Request (invalid path/query parameter value, e.g. unknown enum)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Object> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", 400);
+        body.put("error", "Bad Request");
+        body.put("message", "Invalid value '" + ex.getValue() + "' for parameter '" + ex.getName() + "'");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     // 409 - Conflict
-    @ExceptionHandler({ IllegalArgumentException.class, DataIntegrityViolationException.class })
+    @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Object> handleConflict(RuntimeException ex) {
         Map<String, Object> body = new HashMap<>();
         body.put("status", 409);
         body.put("error", "Conflict");
         body.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    // 409 - Conflict (database constraint) - the raw SQL message is not sent to the client
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Object> handleDataIntegrity(DataIntegrityViolationException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", 409);
+        body.put("error", "Conflict");
+        body.put("message", "The operation conflicts with existing data (it may still be in use)");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 

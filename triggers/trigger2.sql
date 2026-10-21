@@ -9,10 +9,11 @@ FOR EACH ROW
 BEGIN
     DECLARE habit_count INT;
 
-    -- Check if the user has any habits
+    -- Check if the user has any active (not completed) habits
     SELECT COUNT(*) INTO habit_count
     FROM habits
-    WHERE user_id = OLD.id;
+    WHERE user_id = OLD.id
+      AND done = false;
 
     -- If the user has habits, abort the delete operation
     IF habit_count > 0 THEN

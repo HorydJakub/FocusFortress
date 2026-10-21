@@ -27,7 +27,6 @@ server.port=8080
 
 # JWT Configuration
 jwt.secret=your-super-secret-key-should-be-long-and-secure-here
-jwt.expiration=86400000
 
 # YouTube API
 youtube.api.key=YOUR_YOUTUBE_API_KEY_HERE
@@ -39,3 +38,5 @@ spring.security.oauth2.client.registration.google.client-secret=YOUR_GOOGLE_CLIE
 spring.security.oauth2.client.registration.google.scope=email,profile
 spring.security.oauth2.client.registration.google.redirect-uri={baseUrl}/login/oauth2/code/google
 
+# Public URL of the backend, used in e-mail verification links
+app.backend-url=http://localhost:8080

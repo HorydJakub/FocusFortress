@@ -7,6 +7,7 @@ import com.focusfortress.model.HabitProgress;
 import com.focusfortress.repository.HabitProgressRepository;
 import com.focusfortress.repository.HabitRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +43,12 @@ public class HabitProgressService {
         HabitProgress progress = new HabitProgress();
         progress.setHabit(habit);
         progress.setDate(today);
-        habitProgressRepository.save(progress);
+        try {
+            habitProgressRepository.saveAndFlush(progress);
+        } catch (DataIntegrityViolationException e) {
+            // A concurrent request (double click, second device) inserted today's entry first
+            throw new IllegalStateException("Already marked as done today");
+        }
 
         int streak = calculateStreak(habit, today);
 
@@ -71,6 +77,11 @@ public class HabitProgressService {
         List<HabitProgress> progressList = habitProgressRepository.findByHabitOrderByDateDesc(habit);
         int streak = 0;
         LocalDate day = startDate;
+
+        // A streak is still alive until the end of today, so count from yesterday if today isn't done yet
+        if (!progressList.isEmpty() && progressList.get(0).getDate().equals(startDate.minusDays(1))) {
+            day = startDate.minusDays(1);
+        }
 
         for (HabitProgress hp : progressList) {
             if (hp.getDate().equals(day)) {

@@ -45,7 +45,6 @@ application-docker.properties
 .idea
 
 # Frontend
-frontend/package-lock.json
 frontend/node_modules/
 frontend/build/
 frontend/.env
@@ -54,3 +53,6 @@ frontend/.env
 *.log
 /frontend/public/index.html
 /backend/src/main/resources/application-docker.properties
+
+# Claude Code (agent worktrees)
+.claude/

@@ -13,6 +13,8 @@ public interface UserInterestRepository extends JpaRepository<UserInterest, Long
 
     boolean existsByUserIdAndSubcategoryId(Long userId, Long subcategoryId);
 
+    boolean existsBySubcategoryId(Long subcategoryId);
+
     void deleteByUserIdAndSubcategoryId(Long userId, Long subcategoryId);
 
     @Query("SELECT COUNT(ui) FROM UserInterest ui WHERE ui.user.id = :userId")

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AlertCircle, ChevronRight } from 'lucide-react';
 import AnimatedBackground from './AnimatedBackground';
+import { API_BASE_URL, BACKEND_URL } from '../../services/api';
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -29,7 +30,7 @@ const AuthPage = () => {
     const fetchInterests = async () => {
       try {
         console.log('Fetching interests from API...');
-        const response = await fetch('http://localhost:8080/api/interests/subcategories');
+        const response = await fetch(`${API_BASE_URL}/interests/subcategories`);
         console.log('Response status:', response.status);
 
         if (!response.ok) {
@@ -691,7 +692,7 @@ const AuthPage = () => {
             {/* GOOGLE LOGIN BUTTON */}
             <div style={{ marginTop: '24px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
               <a
-                href="http://localhost:8080/oauth2/authorization/google"
+                href={`${BACKEND_URL}/oauth2/authorization/google`}
                 style={{
                   width: '100%',
                   padding: '12px',

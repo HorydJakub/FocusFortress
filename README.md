@@ -2,10 +2,14 @@
 
 A comprehensive productivity and habit-tracking application built with Spring Boot and React. FocusFortress helps users build better habits, track their progress, and discover personalized content based on their interests.
 
+[![CI](https://github.com/HorydJakub/FocusFortress/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/HorydJakub/FocusFortress/actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Java](https://img.shields.io/badge/Java-17-orange.svg)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.2-brightgreen.svg)
 ![React](https://img.shields.io/badge/React-18.2.0-blue.svg)
+![JUnit 5](https://img.shields.io/badge/tested%20with-JUnit%205-25A162.svg)
+![Testcontainers](https://img.shields.io/badge/integration-Testcontainers-2496ED.svg)
+![Playwright](https://img.shields.io/badge/e2e-Playwright-2EAD33.svg)
 
 ## 🚀 Getting Started
 
@@ -179,6 +183,59 @@ docker compose down
 - **Lucide React** (Icons)
 - **Emoji Picker React**
 
+
+## 🧪 Testing
+
+FocusFortress ships with a layered automated test suite that runs on every push to `master` and on every pull request.
+
+### Test pyramid
+
+| Layer | Location | Naming | Tooling | Runs in |
+|---|---|---|---|---|
+| **Unit** | `backend/src/test/java/com/focusfortress/unit` | `*Test.java` | JUnit 5, Mockito, AssertJ (no Spring context) | `mvn test` (Surefire) |
+| **API** | `backend/src/test/java/com/focusfortress/api` | `*Test.java` | Spring Boot Test, H2 (profile `test`) | `mvn test` (Surefire) |
+| **Integration** | `backend/src/test/java/com/focusfortress/it` | `*IT.java` | Testcontainers (MySQL), GreenMail | `mvn verify` (Failsafe) |
+| **End-to-end** | `e2e/` | Playwright specs | Playwright (TypeScript) against the full Docker Compose stack | `npm test` in `e2e/` |
+
+Unit tests cover the business rules in isolation: JWT generation/validation (expiry, remember-me lifetime, tampered and foreign-signed tokens), habit streak and completion logic (gaps, day boundaries, duplicate check-ins), counter ownership and partial updates, registration rules (password policy, interests 3–7, verification token flow) and DTO mapping. Defects found by the suite were first captured as `@Disabled("BUG: ...")` tests with the *expected* behaviour and then fixed, so each one is now guarded by a passing regression test.
+
+> **Upgrading an existing database?** Run `triggers/migration_2026_10.sql` (instructions inside): it removes duplicate habit check-ins and migrates categories to per-user ownership.
+
+### Running the tests locally
+
+```bash
+# Unit + API tests (no external dependencies)
+mvn test
+
+# Everything on the JVM side, incl. Testcontainers integration tests (requires Docker)
+mvn verify
+
+# End-to-end tests (requires the app running: docker compose up --build -d)
+cd e2e
+npm ci
+npx playwright install --with-deps chromium
+BASE_URL=http://localhost:3000 API_URL=http://localhost:8080/api MAILHOG_URL=http://localhost:8025 npm test
+```
+
+### Reports
+
+| Report | Path |
+|---|---|
+| JUnit XML (unit + API) | `target/surefire-reports/` |
+| JUnit XML (integration) | `target/failsafe-reports/` |
+| JaCoCo coverage (unit + API) | `target/site/jacoco/index.html` |
+| JaCoCo coverage (integration) | `target/site/jacoco-it/index.html` |
+| Playwright HTML report | `e2e/playwright-report/index.html` (`npx playwright show-report`) |
+
+### Continuous Integration
+
+The [CI workflow](.github/workflows/ci.yml) (GitHub Actions) runs three jobs:
+
+1. **Backend tests** – JDK 17 (Temurin), `mvn verify` running unit, API and Testcontainers integration tests. Results are published as a check run with inline annotations, a JaCoCo coverage table is added to the job summary and the HTML coverage report is uploaded as an artifact.
+2. **Frontend build** – Node 20, production build of the React app.
+3. **E2E tests** – after the backend job passes, the whole stack (MySQL, MailHog, backend, frontend) is started with Docker Compose, Playwright runs against it, and the HTML report is uploaded as an artifact. Container logs are dumped automatically when the job fails.
+
+Superseded runs on the same branch are cancelled automatically, and the workflow uses least-privilege `GITHUB_TOKEN` permissions.
 
 ## 📁 Project Structure
 
